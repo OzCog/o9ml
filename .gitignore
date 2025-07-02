@@ -124,3 +124,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 node_modules/
+
+# Foundation Layer specific build artifacts
+build*/
+test-build/
+build-foundation/
+test-foundation/
+artifacts/
+foundation_build_report.json
+hardware_matrix_config.h
