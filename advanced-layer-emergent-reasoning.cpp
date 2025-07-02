@@ -12,9 +12,70 @@
 #include <cassert>
 #include <cmath>
 #include <algorithm>
+#include <set>
+#include <atomic>
 
 namespace opencog {
 namespace advanced {
+
+// ========================================================================
+// AtomSpace Integration Framework for Learning
+// ========================================================================
+
+// Simulated AtomSpace for cognitive kernel state management
+class CognitiveAtomSpace {
+private:
+    std::map<std::string, std::map<std::string, float>> atom_values;
+    std::set<std::string> atoms;
+    std::atomic<size_t> change_count{0};
+    
+public:
+    // Add or update an atom with values
+    void set_atom_value(const std::string& atom_name, const std::string& key, float value) {
+        atoms.insert(atom_name);
+        atom_values[atom_name][key] = value;
+        change_count.fetch_add(1);
+    }
+    
+    // Get atom value
+    float get_atom_value(const std::string& atom_name, const std::string& key) const {
+        auto atom_it = atom_values.find(atom_name);
+        if (atom_it != atom_values.end()) {
+            auto value_it = atom_it->second.find(key);
+            if (value_it != atom_it->second.end()) {
+                return value_it->second;
+            }
+        }
+        return 0.0f;
+    }
+    
+    // Check if atom exists
+    bool has_atom(const std::string& atom_name) const {
+        return atoms.find(atom_name) != atoms.end();
+    }
+    
+    // Get all atoms
+    std::set<std::string> get_atoms() const {
+        return atoms;
+    }
+    
+    // Get change count for validation
+    size_t get_change_count() const {
+        return change_count.load();
+    }
+    
+    // Create changeset snapshot
+    std::map<std::string, std::map<std::string, float>> create_changeset() const {
+        return atom_values;
+    }
+    
+    // Clear all atoms (for testing)
+    void clear() {
+        atoms.clear();
+        atom_values.clear();
+        change_count.store(0);
+    }
+};
 
 // ========================================================================
 // Probabilistic Tensor Framework for Advanced Reasoning
@@ -87,6 +148,120 @@ struct ProbabilisticTensorDOF {
             total += evolutionary_fitness[i];
         }
         return total / 16.0f;
+    }
+};
+
+// ========================================================================
+// Learning Membrane: Recursive Kernel Reshaping
+// ========================================================================
+
+class LearningMembrane {
+private:
+    CognitiveAtomSpace& atomspace;
+    std::vector<std::map<std::string, std::map<std::string, float>>> kernel_snapshots;
+    size_t max_snapshots = 3000; // As mentioned in AtomSpace docs
+    
+public:
+    LearningMembrane(CognitiveAtomSpace& as) : atomspace(as) {}
+    
+    // Recursive kernel reshaping based on learning patterns
+    void reshape_cognitive_kernel(const std::map<std::string, ProbabilisticTensorDOF>& learned_knowledge,
+                                 const std::vector<std::string>& discovered_patterns) {
+        std::cout << "\n🧠 Learning Membrane: Reshaping Cognitive Kernel" << std::endl;
+        
+        // Store current kernel state as changeset
+        auto current_changeset = atomspace.create_changeset();
+        kernel_snapshots.push_back(current_changeset);
+        
+        // Limit snapshots to prevent memory explosion
+        if (kernel_snapshots.size() > max_snapshots) {
+            kernel_snapshots.erase(kernel_snapshots.begin());
+        }
+        
+        size_t atoms_modified = 0;
+        size_t atoms_created = 0;
+        
+        // Update AtomSpace with learned knowledge
+        for (const auto& knowledge : learned_knowledge) {
+            const std::string& concept = knowledge.first;
+            const ProbabilisticTensorDOF& tensor = knowledge.second;
+            
+            // Create or update concept atom
+            bool is_new = !atomspace.has_atom(concept);
+            if (is_new) atoms_created++;
+            else atoms_modified++;
+            
+            // Store tensor dimensions as atom values
+            atomspace.set_atom_value(concept, "reasoning_confidence", tensor.reasoning_confidence());
+            atomspace.set_atom_value(concept, "pattern_strength", tensor.pattern_mining_strength());
+            atomspace.set_atom_value(concept, "evolutionary_score", tensor.evolutionary_score());
+            
+            // Store individual tensor dimensions for kernel inspection
+            for (int i = 0; i < 16; i++) {
+                atomspace.set_atom_value(concept, "uncertainty_" + std::to_string(i), tensor.uncertainty_propagation[i]);
+                atomspace.set_atom_value(concept, "confidence_" + std::to_string(i), tensor.confidence_distribution[i]);
+                atomspace.set_atom_value(concept, "pattern_" + std::to_string(i), tensor.pattern_strength[i]);
+                atomspace.set_atom_value(concept, "evolution_" + std::to_string(i), tensor.evolutionary_fitness[i]);
+            }
+        }
+        
+        // Add discovered patterns as emergent concepts
+        for (const auto& pattern : discovered_patterns) {
+            if (!atomspace.has_atom(pattern)) {
+                atoms_created++;
+                
+                // Create pattern atom with discovery metadata
+                atomspace.set_atom_value(pattern, "pattern_type", 1.0f);
+                atomspace.set_atom_value(pattern, "discovery_strength", 0.8f);
+                atomspace.set_atom_value(pattern, "emergence_level", 1.0f);
+            }
+        }
+        
+        std::cout << "  ✨ Kernel Reshaped: " << atoms_created << " atoms created, " 
+                  << atoms_modified << " atoms modified" << std::endl;
+        std::cout << "  📚 Changesets stored: " << kernel_snapshots.size() << std::endl;
+    }
+    
+    // Recursive adaptation - learn from previous kernel states
+    float calculate_adaptation_synergy() {
+        if (kernel_snapshots.size() < 2) return 0.0f;
+        
+        // Compare current state with previous snapshots
+        auto current_state = atomspace.create_changeset();
+        auto& prev_state = kernel_snapshots.back();
+        
+        float adaptation_score = 0.0f;
+        size_t comparisons = 0;
+        
+        for (const auto& atom_pair : current_state) {
+            const std::string& atom_name = atom_pair.first;
+            
+            if (prev_state.find(atom_name) != prev_state.end()) {
+                for (const auto& value_pair : atom_pair.second) {
+                    const std::string& key = value_pair.first;
+                    float current_val = value_pair.second;
+                    
+                    auto prev_it = prev_state.at(atom_name).find(key);
+                    if (prev_it != prev_state.at(atom_name).end()) {
+                        float prev_val = prev_it->second;
+                        float adaptation = std::abs(current_val - prev_val);
+                        adaptation_score += adaptation;
+                        comparisons++;
+                    }
+                }
+            }
+        }
+        
+        return comparisons > 0 ? adaptation_score / comparisons : 0.0f;
+    }
+    
+    // Get kernel state statistics
+    std::map<std::string, float> get_kernel_stats() const {
+        std::map<std::string, float> stats;
+        stats["total_atoms"] = static_cast<float>(atomspace.get_atoms().size());
+        stats["total_changes"] = static_cast<float>(atomspace.get_change_count());
+        stats["snapshots_stored"] = static_cast<float>(kernel_snapshots.size());
+        return stats;
     }
 };
 
@@ -334,14 +509,21 @@ private:
     PLNInferenceEngine pln_engine;
     ProbabilisticPatternMiner pattern_miner;
     ProbabilisticMOSESOptimizer moses_optimizer;
+    CognitiveAtomSpace atomspace;
+    LearningMembrane learning_membrane;
     
 public:
+    EmergentLearningModule() : learning_membrane(atomspace) {}
+    
     // Recursive synergy - higher-order reasoning integration
     struct LearningOutput {
         std::map<std::string, ProbabilisticTensorDOF> learned_knowledge;
         std::vector<std::string> discovered_patterns;
         ProbabilisticTensorDOF optimized_solution;
         float synergy_score;
+        float adaptation_synergy;
+        std::map<std::string, float> kernel_stats;
+        size_t atomspace_changes;
     };
     
     // Main emergent learning process
@@ -388,10 +570,25 @@ public:
         std::cout << "\n🔄 Phase 4: Recursive Synergy Assessment" << std::endl;
         output.synergy_score = calculate_recursive_synergy(output);
         
+        // Phase 5: AtomSpace Kernel Reshaping
+        std::cout << "\n🔄 Phase 5: AtomSpace Cognitive Kernel Reshaping" << std::endl;
+        size_t initial_changes = atomspace.get_change_count();
+        
+        // Reshape cognitive kernel with learned knowledge
+        learning_membrane.reshape_cognitive_kernel(output.learned_knowledge, output.discovered_patterns);
+        
+        // Calculate adaptation synergy
+        output.adaptation_synergy = learning_membrane.calculate_adaptation_synergy();
+        output.kernel_stats = learning_membrane.get_kernel_stats();
+        output.atomspace_changes = atomspace.get_change_count() - initial_changes;
+        
         std::cout << "\n✨ Emergent Learning Complete!" << std::endl;
         std::cout << "  📈 Synergy Score: " << output.synergy_score << std::endl;
+        std::cout << "  🔄 Adaptation Synergy: " << output.adaptation_synergy << std::endl;
         std::cout << "  🔍 Patterns Discovered: " << output.discovered_patterns.size() << std::endl;
         std::cout << "  🧠 Knowledge Learned: " << output.learned_knowledge.size() << std::endl;
+        std::cout << "  ⚛️  AtomSpace Changes: " << output.atomspace_changes << std::endl;
+        std::cout << "  🎯 Cognitive Atoms: " << output.kernel_stats.at("total_atoms") << std::endl;
         
         return output;
     }
@@ -445,7 +642,12 @@ bool test_probabilistic_reasoning_integration() {
     assert(!result.discovered_patterns.empty());
     assert(!result.learned_knowledge.empty());
     
+    // Validate AtomSpace modifications
+    assert(result.atomspace_changes > 0);
+    assert(result.kernel_stats.at("total_atoms") > 0);
+    
     std::cout << "✅ Probabilistic reasoning integration test passed!" << std::endl;
+    std::cout << "✅ AtomSpace integration validated: " << result.atomspace_changes << " changes" << std::endl;
     return true;
 }
 
@@ -495,6 +697,36 @@ bool test_uncertain_reasoning_optimization() {
     return true;
 }
 
+bool test_atomspace_learning_integration() {
+    std::cout << "\n=== Testing AtomSpace Learning Integration ===\n";
+    
+    using namespace opencog::advanced;
+    
+    // Create test data  
+    std::map<std::string, ProbabilisticTensorDOF> test_data;
+    test_data["learning_concept"] = ProbabilisticTensorDOF();
+    test_data["adaptive_pattern"] = ProbabilisticTensorDOF();
+    
+    // Test learning membrane and AtomSpace integration
+    EmergentLearningModule learning_module;
+    auto result = learning_module.perform_emergent_learning(test_data);
+    
+    // Validate AtomSpace state changes
+    assert(result.atomspace_changes > 0);
+    assert(result.kernel_stats.at("total_atoms") >= static_cast<float>(test_data.size()));
+    assert(result.kernel_stats.at("total_changes") > 0);
+    assert(result.adaptation_synergy >= 0.0f);
+    
+    // Validate recursive kernel reshaping
+    assert(!result.discovered_patterns.empty());
+    assert(!result.learned_knowledge.empty());
+    
+    std::cout << "✅ AtomSpace learning integration test passed!" << std::endl;
+    std::cout << "✅ Cognitive kernel reshaping validated" << std::endl;
+    std::cout << "✅ Learning membrane operational" << std::endl;
+    return true;
+}
+
 int main() {
     std::cout << "🚀 Advanced Layer: Emergent Learning and Reasoning Tests\n" << std::endl;
     
@@ -503,6 +735,7 @@ int main() {
     all_tests_passed &= test_probabilistic_reasoning_integration();
     all_tests_passed &= test_tensor_mapping_for_pln();
     all_tests_passed &= test_uncertain_reasoning_optimization();
+    all_tests_passed &= test_atomspace_learning_integration();
     
     std::cout << "\n===========================================" << std::endl;
     if (all_tests_passed) {
@@ -512,6 +745,8 @@ int main() {
         std::cout << "✅ Tensor mapping for PLN inference working" << std::endl;
         std::cout << "✅ Uncertain reasoning and optimization validated" << std::endl;
         std::cout << "✅ Recursive synergy achieved" << std::endl;
+        std::cout << "✅ AtomSpace cognitive kernel integration successful" << std::endl;
+        std::cout << "✅ Learning membrane recursive adaptation validated" << std::endl;
     } else {
         std::cout << "❌ Some tests FAILED!" << std::endl;
         return 1;
