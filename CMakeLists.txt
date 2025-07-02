@@ -229,6 +229,12 @@ IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/sensory/CMakeLists.txt")
     ADD_SUBDIRECTORY(sensory)
 ENDIF()
 
+# Robotics Embodied Cognition Layer
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/robotics-embodied/CMakeLists.txt")
+    MESSAGE(STATUS "Adding robotics-embodied (embodied cognition layer)")
+    ADD_SUBDIRECTORY(robotics-embodied)
+ENDIF()
+
 # ===================================================================
 # Show a summary of what was built
 

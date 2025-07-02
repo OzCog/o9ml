@@ -1,0 +1,21 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
+PROJECT(robotics-embodied-standalone)
+
+# Set C++ standard
+SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Include directories
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include/robotics)
+
+# Build standalone test
+ADD_EXECUTABLE(standalone_test
+    include/robotics/EmbodiedCognitionStandalone.cpp
+    standalone_test.cpp
+)
+
+# Build standalone demo  
+ADD_EXECUTABLE(standalone_demo
+    include/robotics/EmbodiedCognitionStandalone.cpp
+    standalone_demo.cpp
+)
