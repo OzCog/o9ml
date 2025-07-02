@@ -1,0 +1,16 @@
+{
+    "test_category": "unit",
+    "timestamp": "2025-07-02T12:20:11+00:00",
+    "results": [
+        {"component": "cogutil", "status": "FAIL"},
+        {"component": "external-tools", "status": "FAIL"},
+        {"component": "moses", "status": "FAIL"},
+        {"component": "rust_crates", "status": "FAIL"}
+    ],
+    "summary": {
+        "total_tests": 4,
+        "passed": 0
+0,
+        "failed": 4
+    }
+}
