@@ -1,0 +1,77 @@
+name: Auto-Generate Cognitive Build Issues
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write Issues JSON
+        id: write_issues
+        run: |
+          cat <<EOF > issues.json
+          [
+            {
+              "title": "Foundation Layer: Seed the Cognitive Kernel",
+              "body": "### 🧠 Foundation: Seed the Cognitive Kernel\n- [ ] Implement rigorous build & test scripts for `cogutil` and `moses` (Scheme/C++/C)\n- [ ] Parameterize build for ggml kernel adaptation (tensor shape: [modules, build-steps, tests])\n- [ ] Insert hardware matrix for multi-arch potential\n- [ ] Output artifacts for downstream jobs\n- [ ] Document tensor degrees of freedom for each module\n- [ ] Ensure recursive implementation, not mocks\n\n#### Visionary Note\nThis layer forms the atomic substrate of your distributed cognition—prime candidates to be first-order tensors in the agentic catalog."
+            },
+            {
+              "title": "Core Layer: Hypergraph Store Genesis",
+              "body": "### 🌐 Core: Hypergraph Store Genesis\n- [ ] Set dependency: `needs: [cogutil, moses]`\n- [ ] Build/test AtomSpace, atomspace-rocks, atomspace-restful with real data\n- [ ] Validate AtomSpace hypergraph integrity post-build\n- [ ] Expose API endpoints for logic/cognitive layers\n- [ ] Note tensor dimensions for hypergraph ops\n- [ ] No mocks—test real hypergraph ops\n\n#### Cognitive Flow\nThis layer encodes the hypergraph membrane—nodes/links as tensors, edges as relationships, forming the dynamic field for reasoning and learning."
+            },
+            {
+              "title": "Logic Layer: Reasoning Engine Emergence",
+              "body": "### 🔗 Logic: Reasoning Engine Emergence\n- [ ] Dependency: `needs: [atomspace]`\n- [ ] Build/test unify and ure engines\n- [ ] Validate logical inference on actual knowledge graphs\n- [ ] Prepare integration hooks for cognitive modules\n- [ ] Map logic operator tensor shapes\n- [ ] Rigorous, no mocks\n\n#### Hypergraph Pattern Encoding\nThis layer is the prime factorization of reasoning: each operator a transformation in the tensor space."
+            },
+            {
+              "title": "Cognitive Layer: Distributed Cognition Dynamics",
+              "body": "### 🕸️ Cognitive: Distributed Cognition Dynamics\n- [ ] Dependency: `needs: [unify, ure]`\n- [ ] Build/test cogserver, attention, spacetime modules\n- [ ] Implement/benchmark attention allocation mechanisms (ECAN)\n- [ ] Measure activation spreading performance\n- [ ] Document degrees of freedom for attention tensors\n\n#### Adaptive Attention Allocation\nThis is the attention membrane—allocating cognitive resources as dynamic weights across the hypergraph kernel."
+            },
+            {
+              "title": "Advanced Layer: Emergent Learning and Reasoning",
+              "body": "### 🧬 Advanced: Emergent Learning and Reasoning\n- [ ] Dependency: `needs: [cogserver, attention, spacetime]`\n- [ ] Build/test PLN, miner, asmoses with probabilistic reasoning\n- [ ] Test uncertain reasoning and optimization\n- [ ] Prepare real output for learning modules\n- [ ] Tensor mapping for PLN inference\n\n#### Recursive Synergy\nThese modules embody higher-order reasoning—each a recursive subgraph in the cognitive field."
+            },
+            {
+              "title": "Learning Layer: Recursive Evolutionary Adaptation",
+              "body": "### 🔄 Learning: Recursive Evolutionary Adaptation\n- [ ] Dependency: `needs: [pln, miner, asmoses]`\n- [ ] Build/test learn/generate with evolutionary search\n- [ ] Validate learning modifies AtomSpace state\n- [ ] Document learning kernel tensor shape\n\n#### Dynamic Kernel Shaping\nLearning is a membrane that recursively reshapes the cognitive kernel, capturing emergent patterns as new tensor configurations."
+            },
+            {
+              "title": "Language Layer: Natural Language Cognition",
+              "body": "### 🗣️ Language: Natural Language Cognition\n- [ ] Dependency: `needs: [cogserver, attention, spacetime]`\n- [ ] Build/test lg-atomese, relex, link-grammar\n- [ ] Validate semantic parsing/pattern matching\n- [ ] Integrate with AtomSpace and PLN\n- [ ] Document language tensor shapes\n\n#### Cognitive Grammar Encoding\nThis layer forms the interface for neural-symbolic convergence: natural language as a dynamic transformation of symbolic tensors."
+            },
+            {
+              "title": "Robotics Layer: Embodied Cognition",
+              "body": "### 🤖 Robotics: Embodied Cognition\n- [ ] Dependency: `needs: [cogserver, attention, spacetime]`\n- [ ] Build/test vision, perception, sensory modules\n- [ ] Integrate with virtual/real agents\n- [ ] Validate sensory-motor dataflow\n- [ ] Map embodiment kernel tensor dimensions\n\n#### Action-Perception Loop\nThe robotics membrane closes the loop: from perception to action, recursively embedding sensory data as tensor fields."
+            },
+            {
+              "title": "Integration Layer: System Synergy",
+              "body": "### ⚡ Integration: System Synergy\n- [ ] Dependency: `needs: [learn, generate, lg-atomese, relex, link-grammar, vision, perception, sensory]`\n- [ ] Build/test opencog integration\n- [ ] Validate end-to-end system cognition\n- [ ] Document integration tensor structure\n\n#### Cognitive Gestalt\nThis is the cognitive unity: the tensor field of the entire system, resolving the frame problem by nested P-System membranes."
+            },
+            {
+              "title": "Packaging Layer: Deployment Genesis",
+              "body": "### 📦 Packaging: Deployment Genesis\n- [ ] Dependency: `needs: [opencog]`\n- [ ] Build/test Debian and Nix packages\n- [ ] Verify package integrity, installability\n- [ ] Document packaging tensor shape\n\n#### Deployment Membrane\nThis layer wraps the cognitive artifact for distribution—a final tensor encapsulation."
+            }
+          ]
+          EOF
+
+      - name: Read issues JSON
+        id: issues_json
+        run: |
+          echo "matrix=$(cat issues.json)" >> $GITHUB_OUTPUT
+
+      - name: Create issues for each section (Engineering Masterpiece)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = JSON.parse(process.env.matrix);
+            for (const issue of issues) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issue.title,
+                body: issue.body
+              });
+            }
+        env:
+          matrix: ${{ steps.issues_json.outputs.matrix }}
