@@ -104,6 +104,30 @@ IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-ai/moses/CMakeLists.txt")
     ADD_SUBDIRECTORY(orc-ai/moses)
 ENDIF()
 
+# Advanced layer: Pattern Mining (from orc-ai)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-ai/miner/CMakeLists.txt")
+    MESSAGE(STATUS "Adding miner (advanced layer pattern mining)")
+    ADD_SUBDIRECTORY(orc-ai/miner)
+ENDIF()
+
+# Advanced layer: Probabilistic Logic Networks (from orc-ai)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-ai/pln/CMakeLists.txt")
+    MESSAGE(STATUS "Adding pln (advanced layer probabilistic reasoning)")
+    ADD_SUBDIRECTORY(orc-ai/pln)
+ENDIF()
+
+# Advanced layer: AtomSpace MOSES integration (from orc-ai)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-ai/asmoses/CMakeLists.txt")
+    MESSAGE(STATUS "Adding asmoses (advanced layer AtomSpace MOSES)")
+    ADD_SUBDIRECTORY(orc-ai/asmoses)
+ENDIF()
+
+# Advanced layer: Unified Rule Engine (from orc-ai)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-ai/ure/CMakeLists.txt")
+    MESSAGE(STATUS "Adding ure (advanced layer unified reasoning)")
+    ADD_SUBDIRECTORY(orc-ai/ure)
+ENDIF()
+
 # AtomSpace orchestration - Core infrastructure
 IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-as/CMakeLists.txt")
     MESSAGE(STATUS "Adding orc-as (AtomSpace orchestration)")
