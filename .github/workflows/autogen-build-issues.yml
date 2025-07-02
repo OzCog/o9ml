@@ -1,0 +1,76 @@
+name: Auto-Generate Cognitive Build Issues
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate section issue templates
+        id: gen
+        run: |
+          cat << EOF > issues.json
+          [
+            {
+              "title": "Foundation Layer: Seed the Cognitive Kernel",
+              "body": "- [ ] Define build/test scripts for `cogutil` and `moses` (ensure CMake rigor and real test execution)\n- [ ] Parameterize build for ggml kernel adaptation (tensor shape: `[modules, build-steps, tests]`)\n- [ ] Insert hardware matrix if multiple architectures are desired\n- [ ] Output build artifacts for downstream jobs\n- [ ] Document tensor degrees of freedom per module"
+            },
+            {
+              "title": "Core Layer: Hypergraph Store Genesis",
+              "body": "- [ ] Set dependency: `needs: [cogutil, moses]`\n- [ ] Build and test each core module with real data\n- [ ] Check AtomSpace hypergraph integrity post-build\n- [ ] Expose AtomSpace API endpoints for logic and cognitive layers\n- [ ] Detail tensor dimensions for hypergraph operations"
+            },
+            {
+              "title": "Logic Layer: Reasoning Engine Emergence",
+              "body": "- [ ] Set dependency: `needs: [atomspace]`\n- [ ] Build/test unify and ure engines\n- [ ] Validate logical inference on sample knowledge graphs\n- [ ] Prepare integration hooks for cognitive modules\n- [ ] Map logic operator tensor shapes"
+            },
+            {
+              "title": "Cognitive Layer: Distributed Cognition Dynamics",
+              "body": "- [ ] Set dependency: `needs: [unify, ure]`\n- [ ] Build/test cognitive control modules\n- [ ] Implement attention allocation simulation (ECAN hooks)\n- [ ] Benchmark activation spreading performance\n- [ ] Note degrees of freedom for attention tensors"
+            },
+            {
+              "title": "Advanced Layer: Emergent Learning and Reasoning",
+              "body": "- [ ] Set dependency: `needs: [cogserver, attention, spacetime]`\n- [ ] Build/test PLN, miner, asmoses modules with probabilistic reasoning cases\n- [ ] Rigorous test: uncertain reasoning and optimization (no mocks)\n- [ ] Prepare output for learning modules\n- [ ] Tensor mapping for PLN inference chains"
+            },
+            {
+              "title": "Learning Layer: Recursive Evolutionary Adaptation",
+              "body": "- [ ] Set dependency: `needs: [pln, miner, asmoses]`\n- [ ] Build/test with evolutionary search scenarios\n- [ ] Validate that learning output modifies AtomSpace state\n- [ ] Document learning kernel tensor shape"
+            },
+            {
+              "title": "Language Layer: Natural Language Cognition",
+              "body": "- [ ] Set dependency: `needs: [cogserver, attention, spacetime]`\n- [ ] Build/test LG-Atomese, RelEx, Link Grammar modules\n- [ ] Validate semantic parsing and pattern matching\n- [ ] Integrate with AtomSpace and PLN\n- [ ] Document language processing tensor shapes"
+            },
+            {
+              "title": "Robotics Layer: Embodied Cognition",
+              "body": "- [ ] Set dependency: `needs: [cogserver, attention, spacetime]`\n- [ ] Build/test vision, perception, sensory modules\n- [ ] Integrate with virtual agent/robotics simulators\n- [ ] Validate sensory-motor data flow\n- [ ] Map embodiment kernel tensor dimensions"
+            },
+            {
+              "title": "Integration Layer: System Synergy",
+              "body": "- [ ] Set dependency: `needs: [learn, generate, lg-atomese, relex, link-grammar, vision, perception, sensory]`\n- [ ] Build/test opencog integration\n- [ ] Validate end-to-end system cognition\n- [ ] Document integration tensor structure"
+            },
+            {
+              "title": "Packaging Layer: Deployment Genesis",
+              "body": "- [ ] Set dependency: `needs: [opencog]`\n- [ ] Build/test Debian and Nix packages\n- [ ] Verify package integrity and installability\n- [ ] Document packaging tensor shape"
+            }
+          ]
+          EOF
+      - name: Read issues as matrix
+        id: issues
+        run: |
+          echo "matrix=$(cat issues.json)" >> $GITHUB_OUTPUT
+
+      - name: Create issues for each section
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = JSON.parse(process.env.matrix);
+            for (const issue of issues) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issue.title,
+                body: issue.body
+              });
+            }
+        env:
+          matrix: ${{ steps.issues.outputs.matrix }}
