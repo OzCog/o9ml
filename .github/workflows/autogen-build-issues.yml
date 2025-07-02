@@ -55,10 +55,10 @@ jobs:
           ]
           EOF
 
-      - name: Read issues JSON
-        id: issues_json
+      - name: Output issues.json as matrix
+        id: issues_matrix_json
         run: |
-          echo "matrix=$(cat issues.json)" >> $GITHUB_OUTPUT
+          echo "matrix=$(jq -c . issues.json)" >> $GITHUB_OUTPUT
 
       - name: Create issues for each section (Engineering Masterpiece)
         uses: actions/github-script@v7
