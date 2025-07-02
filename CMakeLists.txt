@@ -76,12 +76,32 @@ ADD_DEFINITIONS(-DPROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 
 MESSAGE(STATUS "Building OpenCog Central - all components")
 
+# ===============================================================
+# Foundation Layer: Hardware Matrix & Tensor Configuration
+# ===============================================================
+
+# Include foundation layer hardware matrix configuration
+INCLUDE(cmake/HardwareMatrix.cmake)
+
 # Core foundation - Required
-IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cogutil/CMakeLists.txt")
-    MESSAGE(STATUS "Adding cogutil (core utilities)")
-    ADD_SUBDIRECTORY(cogutil)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-dv/cogutil/CMakeLists.txt")
+    MESSAGE(STATUS "Adding cogutil (foundation layer core utilities)")
+    ADD_SUBDIRECTORY(orc-dv/cogutil)
+    SET(HAVE_COGUTIL ON)
 ELSE()
-    MESSAGE(WARNING "cogutil not found - this is required!")
+    MESSAGE(WARNING "cogutil not found in orc-dv - this is required!")
+ENDIF()
+
+# Foundation layer external tools
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-dv/external-tools/CMakeLists.txt")
+    MESSAGE(STATUS "Adding external-tools (foundation layer)")
+    ADD_SUBDIRECTORY(orc-dv/external-tools)
+ENDIF()
+
+# Foundation layer MOSES (from orc-ai)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/orc-ai/moses/CMakeLists.txt")
+    MESSAGE(STATUS "Adding moses (foundation layer evolutionary algorithms)")
+    ADD_SUBDIRECTORY(orc-ai/moses)
 ENDIF()
 
 # AtomSpace orchestration - Core infrastructure
