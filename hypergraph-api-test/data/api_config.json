@@ -1,0 +1,24 @@
+{
+    "atomspace_id": "hypergraph_core",
+    "rest_api": {
+        "host": "localhost",
+        "port": 5000,
+        "endpoints": {
+            "atoms": "/api/v1/atoms",
+            "query": "/api/v1/query", 
+            "statistics": "/api/v1/stats",
+            "validation": "/api/v1/validate",
+            "tensor_ops": "/api/v1/tensor"
+        }
+    },
+    "hypergraph_config": {
+        "enable_tensor_dof": true,
+        "tensor_dimensions": {
+            "spatial": 3,
+            "temporal": 1,
+            "semantic": 256,
+            "logical": 64
+        },
+        "validation_strict": true
+    }
+}
