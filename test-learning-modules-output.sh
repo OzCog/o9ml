@@ -105,6 +105,36 @@ else
 fi
 
 echo ""
+echo "⚛️  AtomSpace State Modification Validation:"
+
+# Check for AtomSpace changes
+ATOMSPACE_CHANGES=$(echo "$TEST_OUTPUT" | grep "AtomSpace Changes:" | head -1 | cut -d':' -f2 | xargs)
+COGNITIVE_ATOMS=$(echo "$TEST_OUTPUT" | grep "Cognitive Atoms:" | head -1 | cut -d':' -f2 | xargs)
+
+if [ -n "$ATOMSPACE_CHANGES" ] && [ "$ATOMSPACE_CHANGES" -gt "0" ]; then
+    echo "  ✅ AtomSpace modifications confirmed: $ATOMSPACE_CHANGES changes"
+else
+    echo "  ❌ No AtomSpace modifications detected"
+    exit 1
+fi
+
+if [ -n "$COGNITIVE_ATOMS" ] && [ "$(echo "$COGNITIVE_ATOMS > 0" | bc -l)" = "1" ]; then
+    echo "  ✅ Cognitive atoms created: $COGNITIVE_ATOMS atoms"
+else
+    echo "  ❌ No cognitive atoms created"
+    exit 1
+fi
+
+# Check for kernel reshaping
+KERNEL_RESHAPING=$(echo "$TEST_OUTPUT" | grep "Learning Membrane: Reshaping Cognitive Kernel" | wc -l)
+if [ "$KERNEL_RESHAPING" -gt "0" ]; then
+    echo "  ✅ Cognitive kernel reshaping confirmed"
+else
+    echo "  ❌ No kernel reshaping detected"
+    exit 1
+fi
+
+echo ""
 echo "🔄 Recursive Synergy Validation:"
 
 # Check for recursive operations
@@ -138,6 +168,8 @@ echo "  - Tensor mapping operational"
 echo "  - Probabilistic reasoning confirmed"
 echo "  - Uncertain reasoning and optimization working"
 echo "  - Recursive synergy between modules achieved"
+echo "  - AtomSpace state modifications confirmed"
+echo "  - Cognitive kernel reshaping operational"
 echo ""
 echo "📊 Output Summary:"
 echo "  - Synergy Score: $SYNERGY_SCORE (recursive integration quality)"
@@ -145,6 +177,8 @@ echo "  - Patterns: $PATTERNS_COUNT (probabilistic pattern discovery)"
 echo "  - Knowledge: $KNOWLEDGE_COUNT (PLN inference results)"
 echo "  - Inferences: $PLN_INFERENCES (probabilistic reasoning steps)"
 echo "  - Optimizations: $OPTIMIZATION_GENERATIONS (evolutionary steps)"
+echo "  - AtomSpace Changes: $ATOMSPACE_CHANGES (cognitive state modifications)"
+echo "  - Cognitive Atoms: $COGNITIVE_ATOMS (emergent concept formation)"
 echo ""
 echo "🚀 Advanced layer ready for cognitive field operations!"
 echo "=========================================="
