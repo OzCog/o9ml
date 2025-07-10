@@ -1837,6 +1837,85 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
+          
+          # Create CogServer CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/CogServer
+          sudo tee /usr/local/lib/cmake/CogServer/CogServerConfig.cmake > /dev/null <<'EOF'
+          # CogServerConfig.cmake - Minimal config file for CogServer
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(CogServer_VERSION "0.1.4")
+          set(COGSERVER_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(COGSERVER_FOUND TRUE)
+          set(CogServer_FOUND TRUE)
+
+          # Set include directories
+          set(COGSERVER_INCLUDE_DIR "/usr/local/include")
+          set(CogServer_INCLUDE_DIR "/usr/local/include")
+
+          # Set library directories and libraries
+          set(COGSERVER_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(CogServer_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the CogServer libraries
+          find_library(COGSERVER_LIBRARY
+              NAMES server
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          find_library(COGSERVER_NETWORK_LIBRARY
+              NAMES network
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(CogServer_LIBRARY ${COGSERVER_LIBRARY})
+          set(CogServer_NETWORK_LIBRARY ${COGSERVER_NETWORK_LIBRARY})
+
+          # Set other common variables
+          set(COGSERVER_DATA_DIR "/usr/local/share/opencog")
+          set(CogServer_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(COGSERVER_FOUND TRUE)
+          set(CogServer_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET cogserver::cogserver)
+              add_library(cogserver::cogserver SHARED IMPORTED)
+              set_target_properties(cogserver::cogserver PROPERTIES
+                  IMPORTED_LOCATION "${COGSERVER_LIBRARY}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${COGSERVER_INCLUDE_DIR}"
+              )
+          endif()
+
+          message(STATUS "Found CogServer: ${COGSERVER_LIBRARY}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/CogServer/CogServerConfigVersion.cmake > /dev/null <<'EOF'
+          # CogServerConfigVersion.cmake - Version file for CogServer
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
 
       - name: Build Learn
         run: |
