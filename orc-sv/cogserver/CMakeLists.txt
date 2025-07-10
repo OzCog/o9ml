@@ -168,6 +168,11 @@ IF (NOT DEFINED DATADIR)
 ENDIF (NOT DEFINED DATADIR)
 ADD_DEFINITIONS(-DDATADIR="${DATADIR}")
 
+## Set version for package configuration files
+## It doesn't have a header-file declaring the version similar to cogutil and
+## atomspace.
+SET(SEMANTIC_VERSION 0.1.4)
+
 IF(HAVE_SERVER)
 	ADD_SUBDIRECTORY(opencog)
 	ADD_SUBDIRECTORY(examples EXCLUDE_FROM_ALL)
@@ -224,9 +229,6 @@ STRING(TIMESTAMP UTC_DATE %Y%m%d UTC)
 # that it is owned by the builder thus avoiding 'Permission denied' error when
 # packaging.
 FILE(WRITE "${PROJECT_BINARY_DIR}/install_manifest.txt")
-## It doesn't have a header-file declaring the version similar to cogutil and
-## atomspace.
-SET(SEMANTIC_VERSION 0.1.4)
 
 ## Cpack configuration
 SET(CPACK_GENERATOR "DEB")
