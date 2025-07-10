@@ -59,6 +59,13 @@ jobs:
       - name: Set number of make jobs
         run: echo "MAKEFLAGS=-j2" >> $GITHUB_ENV
 
+      - name: Install CogUtil
+        run: |
+          git clone --depth 1 https://github.com/opencog/cogutil /ws/cogutil
+          mkdir -p /ws/cogutil/build
+          cd /ws/cogutil/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
       - name: CMake Configure
         run: |
           mkdir build
@@ -89,7 +96,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: atomspace
-          path: /ws/atomspace
+          path: build/
+
+      - name: Install AtomSpace
+        run: |
+          cd build && make -j2 install && ldconfig
 
       - name: Upload ccache artifact
         uses: actions/upload-artifact@v4
