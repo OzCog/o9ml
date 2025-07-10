@@ -14,7 +14,7 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
-SET(CYTHON_FLAGS "-3" "-f" "-I" "${CMAKE_SOURCE_DIR}/orc-as/atomspace/opencog/cython")
+SET(CYTHON_FLAGS "-3" "-f" "-I" "${CMAKE_SOURCE_DIR}/../../orc-as/atomspace/opencog/cython")
 
 # Use this as a guide:
 # https://github.com/OpenKinect/libfreenect/blob/master/wrappers/python/CMakeLists.txt
@@ -46,7 +46,7 @@ ENDIF (HAVE_ATOMSPACE)
 
 ############################ cogserver #########################
 CYTHON_ADD_MODULE_PYX(cogserver
-	"${CMAKE_SOURCE_DIR}/orc-as/atomspace/opencog/cython/opencog/atomspace.pxd"
+	"${CMAKE_SOURCE_DIR}/../../orc-as/atomspace/opencog/cython/opencog/atomspace.pxd"
 	"request.pyx"
 	"../../cogserver/server/Request.h"
 )
