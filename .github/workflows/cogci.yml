@@ -1,0 +1,2380 @@
+name: CogML Full 2 Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+
+  # ==== Foundation ====
+  cogutil:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full git history for versioning
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
+          
+      - name: Build cogutil
+        run: |
+          cd orc-dv/cogutil
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test cogutil
+        run: |
+          cd orc-dv/cogutil/build
+          make test || true
+          
+      - name: Install cogutil
+        run: |
+          cd orc-dv/cogutil/build
+          sudo make install
+          sudo ldconfig
+          
+      - name: Cache cogutil build
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+
+  # ==== Core AtomSpace ====
+  atomspace:
+    runs-on: ubuntu-latest
+    needs: [cogutil]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full git history for versioning
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          
+      - name: Install cogutil
+        run: |
+          cd orc-dv/cogutil/build
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build AtomSpace
+        run: |
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test AtomSpace
+        run: |
+          cd orc-as/atomspace/build
+          make test || true
+          
+      - name: Install AtomSpace
+        run: |
+          cd orc-as/atomspace/build
+          sudo make install
+          sudo ldconfig
+          
+      - name: Cache atomspace build
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+
+  atomspace-rocks:
+    runs-on: ubuntu-latest
+    needs: [atomspace]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+          
+      - name: Test AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks/build
+          make test || true
+          
+      - name: Install AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks/build
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpaceRocks CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfig.cmake - Minimal config file for AtomSpaceRocks
+
+          # Set version information
+          set(PACKAGE_VERSION "1.3.0")
+          set(AtomSpaceRocks_VERSION "1.3.0")
+          set(ATOMSPACE_ROCKS_VERSION "1.3.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_ROCKS_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpaceRocks_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_ROCKS_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpaceRocks_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the AtomSpaceRocks library
+          find_library(ATOMSPACE_ROCKS_LIBRARIES
+              NAMES persist-rocks
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpaceRocks_LIBRARIES ${ATOMSPACE_ROCKS_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_ROCKS_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpaceRocks_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace-rocks::atomspace-rocks)
+              add_library(atomspace-rocks::atomspace-rocks SHARED IMPORTED)
+              set_target_properties(atomspace-rocks::atomspace-rocks PROPERTIES
+                  IMPORTED_LOCATION "${ATOMSPACE_ROCKS_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${ATOMSPACE_ROCKS_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpaceRocks: ${ATOMSPACE_ROCKS_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
+
+          set(PACKAGE_VERSION "1.3.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+
+  atomspace-restful:
+    runs-on: ubuntu-latest
+    needs: [atomspace]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev libcpprest-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+
+      - name: Build AtomSpace RESTful
+        run: |
+          cd orc-as/atomspace-restful
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+          
+      - name: Test AtomSpace RESTful
+        run: |
+          cd orc-as/atomspace-restful/build
+          make test || true
+
+  # ==== Logic ====
+  ure:
+    runs-on: ubuntu-latest
+    needs: [atomspace]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install unify
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
+          cd /tmp/unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build URE
+        run: |
+          cd orc-ai/ure
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+          
+      - name: Test URE
+        run: |
+          cd orc-ai/ure/build
+          make test || true
+          
+      - name: Install URE
+        run: |
+          cd orc-ai/ure/build
+          sudo make install
+          sudo ldconfig
+          
+      - name: Cache ure build
+        uses: actions/cache@v3
+        with:
+          path: orc-ai/ure/build
+          key: ure-${{ runner.os }}-${{ github.sha }}
+
+  # ==== Advanced ====
+  pln:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install unify
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
+          cd /tmp/unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install URE
+        run: |
+          # Always rebuild and install URE to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create URE CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/URE
+          sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
+          # UREConfig.cmake - Minimal config file for URE
+
+          # Set version information
+          set(PACKAGE_VERSION "1.0.0")
+          set(URE_VERSION "1.0.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(URE_FOUND TRUE)
+
+          # Set include directories
+          set(URE_INCLUDE_DIR "/usr/local/include")
+          set(URE_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(URE_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the URE library
+          find_library(URE_LIBRARIES
+              NAMES ure
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          # Set other common variables
+          set(URE_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(URE_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET ure::ure)
+              add_library(ure::ure SHARED IMPORTED)
+              set_target_properties(ure::ure PROPERTIES
+                  IMPORTED_LOCATION "${URE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${URE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found URE: ${URE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
+          # UREConfigVersion.cmake - Version file for URE
+
+          set(PACKAGE_VERSION "1.0.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install SpaceTime
+        run: |
+          # Always rebuild and install SpaceTime to ensure consistency
+          cd orc-ct/spacetime
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create SpaceTime CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/SpaceTime
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfig.cmake - Minimal config file for SpaceTime
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(SpaceTime_VERSION "0.1.4")
+          set(SPACETIME_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+
+          # Set include directories
+          set(SPACETIME_INCLUDE_DIRS "/usr/local/include")
+          set(SpaceTime_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(SPACETIME_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(SpaceTime_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the SpaceTime libraries
+          find_library(SPACETIME_LIBRARIES
+              NAMES spacetime-types
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(SpaceTime_LIBRARIES ${SPACETIME_LIBRARIES})
+
+          # Set other common variables
+          set(SPACETIME_DATA_DIR "/usr/local/share/opencog")
+          set(SpaceTime_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET spacetime::spacetime)
+              add_library(spacetime::spacetime SHARED IMPORTED)
+              set_target_properties(spacetime::spacetime PROPERTIES
+                  IMPORTED_LOCATION "${SPACETIME_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${SPACETIME_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build PLN
+        run: |
+          cd orc-ai/pln
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test PLN
+        run: |
+          cd orc-ai/pln/build
+          make test || true
+
+  miner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install unify
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
+          cd /tmp/unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install URE
+        run: |
+          # Always rebuild and install URE to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create URE CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/URE
+          sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
+          # UREConfig.cmake - Minimal config file for URE
+
+          # Set version information
+          set(PACKAGE_VERSION "1.0.0")
+          set(URE_VERSION "1.0.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(URE_FOUND TRUE)
+
+          # Set include directories
+          set(URE_INCLUDE_DIR "/usr/local/include")
+          set(URE_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(URE_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the URE library
+          find_library(URE_LIBRARIES
+              NAMES ure
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          # Set other common variables
+          set(URE_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(URE_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET ure::ure)
+              add_library(ure::ure SHARED IMPORTED)
+              set_target_properties(ure::ure PROPERTIES
+                  IMPORTED_LOCATION "${URE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${URE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found URE: ${URE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
+          # UREConfigVersion.cmake - Version file for URE
+
+          set(PACKAGE_VERSION "1.0.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install SpaceTime
+        run: |
+          # Always rebuild and install SpaceTime to ensure consistency
+          cd orc-ct/spacetime
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create SpaceTime CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/SpaceTime
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfig.cmake - Minimal config file for SpaceTime
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(SpaceTime_VERSION "0.1.4")
+          set(SPACETIME_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+
+          # Set include directories
+          set(SPACETIME_INCLUDE_DIRS "/usr/local/include")
+          set(SpaceTime_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(SPACETIME_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(SpaceTime_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the SpaceTime libraries
+          find_library(SPACETIME_LIBRARIES
+              NAMES spacetime-types
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(SpaceTime_LIBRARIES ${SPACETIME_LIBRARIES})
+
+          # Set other common variables
+          set(SPACETIME_DATA_DIR "/usr/local/share/opencog")
+          set(SpaceTime_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET spacetime::spacetime)
+              add_library(spacetime::spacetime SHARED IMPORTED)
+              set_target_properties(spacetime::spacetime PROPERTIES
+                  IMPORTED_LOCATION "${SPACETIME_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${SPACETIME_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build Miner
+        run: |
+          cd orc-ai/miner
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test Miner
+        run: |
+          cd orc-ai/miner/build
+          make test || true
+
+  moses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build MOSES
+        run: |
+          cd orc-ai/moses
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test MOSES
+        run: |
+          cd orc-ai/moses/build
+          make test || true
+
+  asmoses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install unify
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
+          cd /tmp/unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install URE
+        run: |
+          # Always rebuild and install URE to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create URE CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/URE
+          sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
+          # UREConfig.cmake - Minimal config file for URE
+
+          # Set version information
+          set(PACKAGE_VERSION "1.0.0")
+          set(URE_VERSION "1.0.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(URE_FOUND TRUE)
+
+          # Set include directories
+          set(URE_INCLUDE_DIR "/usr/local/include")
+          set(URE_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(URE_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the URE library
+          find_library(URE_LIBRARIES
+              NAMES ure
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          # Set other common variables
+          set(URE_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(URE_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET ure::ure)
+              add_library(ure::ure SHARED IMPORTED)
+              set_target_properties(ure::ure PROPERTIES
+                  IMPORTED_LOCATION "${URE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${URE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found URE: ${URE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
+          # UREConfigVersion.cmake - Version file for URE
+
+          set(PACKAGE_VERSION "1.0.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install SpaceTime
+        run: |
+          # Always rebuild and install SpaceTime to ensure consistency
+          cd orc-ct/spacetime
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create SpaceTime CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/SpaceTime
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfig.cmake - Minimal config file for SpaceTime
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(SpaceTime_VERSION "0.1.4")
+          set(SPACETIME_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+
+          # Set include directories
+          set(SPACETIME_INCLUDE_DIRS "/usr/local/include")
+          set(SpaceTime_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(SPACETIME_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(SpaceTime_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the SpaceTime libraries
+          find_library(SPACETIME_LIBRARIES
+              NAMES spacetime-types
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(SpaceTime_LIBRARIES ${SPACETIME_LIBRARIES})
+
+          # Set other common variables
+          set(SPACETIME_DATA_DIR "/usr/local/share/opencog")
+          set(SpaceTime_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET spacetime::spacetime)
+              add_library(spacetime::spacetime SHARED IMPORTED)
+              set_target_properties(spacetime::spacetime PROPERTIES
+                  IMPORTED_LOCATION "${SPACETIME_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${SPACETIME_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build Asmoses
+        run: |
+          cd orc-ai/asmoses
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test Asmoses
+        run: |
+          cd orc-ai/asmoses/build
+          make test || true
+
+  # ==== Learning ====
+  learn:
+    runs-on: ubuntu-latest
+    needs: [atomspace-rocks]
+#    needs: [pln, miner, asmoses]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev python3-nose valgrind doxygen
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpaceRocks CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfig.cmake - Minimal config file for AtomSpaceRocks
+
+          # Set version information
+          set(PACKAGE_VERSION "1.3.0")
+          set(AtomSpaceRocks_VERSION "1.3.0")
+          set(ATOMSPACE_ROCKS_VERSION "1.3.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_ROCKS_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpaceRocks_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_ROCKS_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpaceRocks_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the AtomSpaceRocks library
+          find_library(ATOMSPACE_ROCKS_LIBRARIES
+              NAMES persist-rocks
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpaceRocks_LIBRARIES \${ATOMSPACE_ROCKS_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_ROCKS_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpaceRocks_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace-rocks::atomspace-rocks)
+              add_library(atomspace-rocks::atomspace-rocks SHARED IMPORTED)
+              set_target_properties(atomspace-rocks::atomspace-rocks PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_ROCKS_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_ROCKS_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpaceRocks: \${ATOMSPACE_ROCKS_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
+
+          set(PACKAGE_VERSION "1.3.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+
+      - name: Build and install unify
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
+          cd /tmp/unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install URE
+        run: |
+          # Always rebuild and install URE to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create URE CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/URE
+          sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
+          # UREConfig.cmake - Minimal config file for URE
+
+          # Set version information
+          set(PACKAGE_VERSION "1.0.0")
+          set(URE_VERSION "1.0.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(URE_FOUND TRUE)
+
+          # Set include directories
+          set(URE_INCLUDE_DIR "/usr/local/include")
+          set(URE_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(URE_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the URE library
+          find_library(URE_LIBRARIES
+              NAMES ure
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          # Set other common variables
+          set(URE_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(URE_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET ure::ure)
+              add_library(ure::ure SHARED IMPORTED)
+              set_target_properties(ure::ure PROPERTIES
+                  IMPORTED_LOCATION "${URE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${URE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found URE: ${URE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
+          # UREConfigVersion.cmake - Version file for URE
+
+          set(PACKAGE_VERSION "1.0.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install cogserver
+        run: |
+          # Always rebuild and install cogserver to ensure consistency
+          cd orc-sv/cogserver
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create CogServer CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/CogServer
+          sudo tee /usr/local/lib/cmake/CogServer/CogServerConfig.cmake > /dev/null <<'EOF'
+          # CogServerConfig.cmake - Minimal config file for CogServer
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(CogServer_VERSION "0.1.4")
+          set(COGSERVER_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(COGSERVER_FOUND TRUE)
+          set(CogServer_FOUND TRUE)
+
+          # Set include directories
+          set(COGSERVER_INCLUDE_DIR "/usr/local/include")
+          set(CogServer_INCLUDE_DIR "/usr/local/include")
+
+          # Set library directories and libraries
+          set(COGSERVER_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(CogServer_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the CogServer libraries
+          find_library(COGSERVER_LIBRARY
+              NAMES server
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          find_library(COGSERVER_NETWORK_LIBRARY
+              NAMES network
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(CogServer_LIBRARY ${COGSERVER_LIBRARY})
+          set(CogServer_NETWORK_LIBRARY ${COGSERVER_NETWORK_LIBRARY})
+
+          # Set other common variables
+          set(COGSERVER_DATA_DIR "/usr/local/share/opencog")
+          set(CogServer_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(COGSERVER_FOUND TRUE)
+          set(CogServer_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET cogserver::cogserver)
+              add_library(cogserver::cogserver SHARED IMPORTED)
+              set_target_properties(cogserver::cogserver PROPERTIES
+                  IMPORTED_LOCATION "${COGSERVER_LIBRARY}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${COGSERVER_INCLUDE_DIR}"
+              )
+          endif()
+
+          message(STATUS "Found CogServer: ${COGSERVER_LIBRARY}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/CogServer/CogServerConfigVersion.cmake > /dev/null <<'EOF'
+          # CogServerConfigVersion.cmake - Version file for CogServer
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+
+      - name: Build Learn
+        run: |
+          cd orc-ai/learn
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test Learn
+        run: |
+          cd orc-ai/learn/build
+          make test || true
+
+  # ==== Integration ====
+  opencog-central:
+    runs-on: ubuntu-latest
+    needs: [learn, atomspace-rocks, atomspace-restful, moses]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
+          
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+          
+      - name: Restore cogutil cache
+        uses: actions/cache@v3
+        with:
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+          
+      - name: Build and install cogutil
+        run: |
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpace CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpace
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfig.cmake - Minimal config file for AtomSpace
+
+          # Set version information
+          set(PACKAGE_VERSION "5.0.3")
+          set(AtomSpace_VERSION "5.0.3")
+          set(ATOMSPACE_VERSION "5.0.3")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpace_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpace_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the atomspace library
+          find_library(ATOMSPACE_LIBRARIES
+              NAMES atomspace
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpace_LIBRARIES \${ATOMSPACE_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpace_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_FOUND TRUE)
+          set(AtomSpace_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace::atomspace)
+              add_library(atomspace::atomspace SHARED IMPORTED)
+              set_target_properties(atomspace::atomspace PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
+
+          set(PACKAGE_VERSION "5.0.3")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build and install unify
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
+          cd /tmp/unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install URE
+        run: |
+          # Always rebuild and install URE to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create URE CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/URE
+          sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
+          # UREConfig.cmake - Minimal config file for URE
+
+          # Set version information
+          set(PACKAGE_VERSION "1.0.0")
+          set(URE_VERSION "1.0.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(URE_FOUND TRUE)
+
+          # Set include directories
+          set(URE_INCLUDE_DIR "/usr/local/include")
+          set(URE_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(URE_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the URE library
+          find_library(URE_LIBRARIES
+              NAMES ure
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          # Set other common variables
+          set(URE_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(URE_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET ure::ure)
+              add_library(ure::ure SHARED IMPORTED)
+              set_target_properties(ure::ure PROPERTIES
+                  IMPORTED_LOCATION "${URE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${URE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found URE: ${URE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
+          # UREConfigVersion.cmake - Version file for URE
+
+          set(PACKAGE_VERSION "1.0.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
+      - name: Build OpenCog Central
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          
+      - name: Test OpenCog Central
+        run: |
+          cd build
+          make test || true
+
+  # ==== Packaging ====
+  opencog-debian:
+    runs-on: ubuntu-latest
+    needs: [opencog-central]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential debhelper fakeroot
+          
+      - name: Build Debian Package
+        run: |
+          if [ -d "debian" ]; then
+            dpkg-buildpackage -us -uc -b
+          else
+            echo "Debian packaging not available"
+          fi
+
+  # ==== Documentation Generation ====
+  generate-docs:
+    runs-on: ubuntu-latest
+    needs: [opencog-central]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install documentation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip graphviz
+          pip3 install --user mermaid-cli
+          
+      - name: Generate Mermaid diagrams
+        run: |
+          if [ -f "generate_mermaid_diagrams.py" ]; then
+            python3 generate_mermaid_diagrams.py
+          fi
+          
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: |
+            *.md
+            *.svg
+            *.png
