@@ -113,60 +113,54 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-          key: deps-rocks-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build AtomSpace Rocks
         run: |
@@ -189,60 +183,54 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev libcpprest-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev libcpprest-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-          key: deps-restful-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build AtomSpace RESTful
         run: |
@@ -266,60 +254,54 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-          key: deps-ure-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build URE
         run: |
@@ -355,77 +337,75 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-            orc-ai/ure/build
-          key: deps-pln-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
-            ure-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+            
+      - name: Restore ure cache
+        uses: actions/cache@v3
+        with:
+          path: orc-ai/ure/build
+          key: ure-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ure-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
-          echo "orc-ai:"
-          ls -al orc-ai || true
-          echo "orc-ai/ure:"
-          ls -al orc-ai/ure || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+      - name: Build and install ure
+        run: |
+          # Always rebuild and install ure to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild ure if build directory missing
-          if [ ! -d "orc-ai/ure/build" ]; then
-            echo "ure build directory missing, rebuilding..."
-            cd orc-ai/ure
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
-          fi
-          cd orc-ai/ure/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build PLN
         run: |
@@ -448,77 +428,75 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-            orc-ai/ure/build
-          key: deps-miner-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
-            ure-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+            
+      - name: Restore ure cache
+        uses: actions/cache@v3
+        with:
+          path: orc-ai/ure/build
+          key: ure-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ure-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
-          echo "orc-ai:"
-          ls -al orc-ai || true
-          echo "orc-ai/ure:"
-          ls -al orc-ai/ure || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+      - name: Build and install ure
+        run: |
+          # Always rebuild and install ure to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild ure if build directory missing
-          if [ ! -d "orc-ai/ure/build" ]; then
-            echo "ure build directory missing, rebuilding..."
-            cd orc-ai/ure
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
-          fi
-          cd orc-ai/ure/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build Miner
         run: |
@@ -541,35 +519,26 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
           
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
           path: orc-dv/cogutil/build
           key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          
-      - name: Install cogutil
-        run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-dv/cogutil/build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
           sudo make install
           sudo ldconfig
           
@@ -594,77 +563,75 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-            orc-ai/ure/build
-          key: deps-asmoses-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
-            ure-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+            
+      - name: Restore ure cache
+        uses: actions/cache@v3
+        with:
+          path: orc-ai/ure/build
+          key: ure-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ure-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
-          echo "orc-ai:"
-          ls -al orc-ai || true
-          echo "orc-ai/ure:"
-          ls -al orc-ai/ure || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+      - name: Build and install ure
+        run: |
+          # Always rebuild and install ure to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild ure if build directory missing
-          if [ ! -d "orc-ai/ure/build" ]; then
-            echo "ure build directory missing, rebuilding..."
-            cd orc-ai/ure
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
-          fi
-          cd orc-ai/ure/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build Asmoses
         run: |
@@ -688,77 +655,75 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-            orc-ai/ure/build
-          key: deps-learn-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
-            ure-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+            
+      - name: Restore ure cache
+        uses: actions/cache@v3
+        with:
+          path: orc-ai/ure/build
+          key: ure-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ure-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
-          echo "orc-ai:"
-          ls -al orc-ai || true
-          echo "orc-ai/ure:"
-          ls -al orc-ai/ure || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+      - name: Build and install ure
+        run: |
+          # Always rebuild and install ure to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild ure if build directory missing
-          if [ ! -d "orc-ai/ure/build" ]; then
-            echo "ure build directory missing, rebuilding..."
-            cd orc-ai/ure
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
-          fi
-          cd orc-ai/ure/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build Learn
         run: |
@@ -782,77 +747,75 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
           
-      - name: Restore all caches
+      - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
-          path: |
-            orc-dv/cogutil/build
-            orc-as/atomspace/build
-            orc-ai/ure/build
-          key: deps-central-${{ runner.os }}-${{ github.sha }}
+          path: orc-dv/cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            cogutil-${{ runner.os }}-${{ github.sha }}
-            atomspace-${{ runner.os }}-${{ github.sha }}
-            ure-${{ runner.os }}-${{ github.sha }}
+            cogutil-${{ runner.os }}-
+            
+      - name: Restore atomspace cache
+        uses: actions/cache@v3
+        with:
+          path: orc-as/atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+            
+      - name: Restore ure cache
+        uses: actions/cache@v3
+        with:
+          path: orc-ai/ure/build
+          key: ure-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ure-${{ runner.os }}-
           
-      - name: Diagnostic workspace check
+      - name: Build and install cogutil
         run: |
-          echo "WORKSPACE:"
-          ls -al
-          echo "orc-dv:"
-          ls -al orc-dv || true
-          echo "orc-dv/cogutil:"
-          ls -al orc-dv/cogutil || true
-          echo "orc-as:"
-          ls -al orc-as || true
-          echo "orc-as/atomspace:"
-          ls -al orc-as/atomspace || true
-          echo "orc-ai:"
-          ls -al orc-ai || true
-          echo "orc-ai/ure:"
-          ls -al orc-ai/ure || true
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-      - name: Install all dependencies
+      - name: Build and install atomspace  
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency
+          cd orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+      - name: Build and install ure
+        run: |
+          # Always rebuild and install ure to ensure consistency
+          cd orc-ai/ure
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
-          
-          # Check and rebuild ure if build directory missing
-          if [ ! -d "orc-ai/ure/build" ]; then
-            echo "ure build directory missing, rebuilding..."
-            cd orc-ai/ure
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
-          fi
-          cd orc-ai/ure/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build OpenCog Central
         run: |

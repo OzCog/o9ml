@@ -161,32 +161,32 @@ jobs:
           
       - name: Install dependencies
         run: |
-          # Check and rebuild cogutil if build directory missing
-          if [ ! -d "orc-dv/cogutil/build" ]; then
-            echo "cogutil build directory missing, rebuilding..."
-            cd orc-dv/cogutil
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install cogutil to ensure consistency
+          cd orc-dv/cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
           fi
-          cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
-          # Check and rebuild atomspace if build directory missing  
-          if [ ! -d "orc-as/atomspace/build" ]; then
-            echo "atomspace build directory missing, rebuilding..."
-            cd orc-as/atomspace
-            # Create missing lib directory if it doesn't exist
-            if [ ! -d "lib" ]; then
-              mkdir -p lib
-              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
-            fi
-            mkdir -p build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            cd ../../..
+          # Always rebuild and install atomspace to ensure consistency  
+          cd ../../orc-as/atomspace
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
-          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
           
       - name: Build URE
         run: |
