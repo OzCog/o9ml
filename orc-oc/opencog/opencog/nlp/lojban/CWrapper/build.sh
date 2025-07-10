@@ -1,15 +1,9 @@
 #!/bin/bash
 BUILD_DIR=$1
 
-ghcver="$(stack --allow-different-user ghc -- --version)"
-
-if [[ "$ghcver" == *8.0.2* ]]
-then
-    echo "Correct GHC version installed"
-else
-    echo "Wrong GHC version installed. Running stack setup."
-    stack setup --allow-different-user
-fi
+# Ensure the correct GHC version is installed for the resolver
+echo "Setting up Stack environment with resolver-specified GHC version..."
+stack setup --allow-different-user
 
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/lib/opencog"
 
