@@ -292,7 +292,7 @@ jobs:
 
           # Find the AtomSpaceRocks library
           find_library(ATOMSPACE_ROCKS_LIBRARIES
-              NAMES atomspace-rocks
+              NAMES persist-rocks
               PATHS /usr/local/lib/opencog
               NO_DEFAULT_PATH
           )
@@ -1859,7 +1859,7 @@ jobs:
 
           # Find the AtomSpaceRocks library
           find_library(ATOMSPACE_ROCKS_LIBRARIES
-              NAMES atomspace-rocks
+              NAMES persist-rocks
               PATHS /usr/local/lib/opencog
               NO_DEFAULT_PATH
           )
