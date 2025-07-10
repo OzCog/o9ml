@@ -426,6 +426,36 @@ FIND_PACKAGE(Doxygen)
 ADD_SUBDIRECTORY(doc EXCLUDE_FROM_ALL)
 
 # ===================================================================
+# Export AtomSpace targets for other projects
+
+# Install the export set for use with the install-tree
+INSTALL(EXPORT AtomSpaceTargets
+    FILE AtomSpaceTargets.cmake
+    NAMESPACE AtomSpace::
+    DESTINATION lib/cmake/AtomSpace
+)
+
+# Create and install AtomSpaceConfig.cmake
+INCLUDE(CMakePackageConfigHelpers)
+WRITE_BASIC_PACKAGE_VERSION_FILE(
+    AtomSpaceConfigVersion.cmake
+    VERSION ${SEMANTIC_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+CONFIGURE_PACKAGE_CONFIG_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/AtomSpaceConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/AtomSpaceConfig.cmake
+    INSTALL_DESTINATION lib/cmake/AtomSpace
+)
+
+INSTALL(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/AtomSpaceConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/AtomSpaceConfigVersion.cmake
+    DESTINATION lib/cmake/AtomSpace
+)
+
+# ===================================================================
 # Show a summary of what we found, what we will do.
 
 SUMMARY_ADD("Doxygen" "Code documentation" DOXYGEN_FOUND)

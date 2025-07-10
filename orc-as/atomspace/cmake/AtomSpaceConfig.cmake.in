@@ -1,0 +1,84 @@
+# AtomSpace Config
+#
+# Defines the following variables:
+#  ATOMSPACE_FOUND - True if AtomSpace was found.
+#  ATOMSPACE_INCLUDE_DIRS - Where to find the headers.
+#  ATOMSPACE_LIBRARIES - The libraries.
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find required dependencies
+find_dependency(CogUtil REQUIRED)
+find_dependency(Boost REQUIRED COMPONENTS system filesystem)
+find_dependency(PkgConfig REQUIRED)
+
+# Use pkg-config to find Guile
+pkg_check_modules(PC_GUILE guile-3.0 QUIET)
+find_path(GUILE_INCLUDE_DIR
+    NAMES libguile.h
+    HINTS ${PC_GUILE_INCLUDEDIR} ${PC_GUILE_INCLUDE_DIRS}
+    PATH_SUFFIXES guile/3.0
+)
+find_library(GUILE_LIBRARY
+    NAMES guile-3.0
+    HINTS ${PC_GUILE_LIBDIR} ${PC_GUILE_LIBRARY_DIRS}
+)
+
+# Find Python
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/AtomSpaceTargets.cmake")
+
+# AtomSpace version
+set(AtomSpace_VERSION @SEMANTIC_VERSION@)
+
+# Define the AtomSpace libraries
+set(ATOMSPACE_LIBRARIES 
+    AtomSpace::atomspace
+    AtomSpace::atombase
+    AtomSpace::atomcore
+    AtomSpace::atomflow
+    AtomSpace::atom_types
+    AtomSpace::value
+    AtomSpace::truthvalue
+    AtomSpace::execution
+    AtomSpace::grounded
+    AtomSpace::pattern
+    AtomSpace::query-engine
+    AtomSpace::join
+    AtomSpace::parallel
+    AtomSpace::rule
+    AtomSpace::clearbox
+    AtomSpace::foreign
+    AtomSpace::smob
+    AtomSpace::load_scm
+    AtomSpace::sexpr
+    AtomSpace::persist
+    AtomSpace::executioncontext
+)
+
+# Define optional libraries that might be available
+if(TARGET AtomSpace::PythonEval)
+    list(APPEND ATOMSPACE_LIBRARIES AtomSpace::PythonEval)
+    set(ATOMSPACE_PythonEval_LIBRARY AtomSpace::PythonEval)
+endif()
+
+if(TARGET AtomSpace::PythonSCM)
+    list(APPEND ATOMSPACE_LIBRARIES AtomSpace::PythonSCM)
+endif()
+
+# Define include directories
+set(ATOMSPACE_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_PREFIX@/include")
+
+# Backward compatibility
+set(ATOMSPACE_FOUND TRUE)
+set(ATOMSPACE_LIBRARY ${ATOMSPACE_LIBRARIES})
+
+# Add ATOMSPACE specific variables that might be used by consuming projects
+set(ATOMSPACE_VERSION_MAJOR 5)
+set(ATOMSPACE_VERSION_MINOR 0)
+set(ATOMSPACE_VERSION_PATCH 4)
+
+check_required_components(AtomSpace)

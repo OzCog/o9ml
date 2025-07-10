@@ -16,7 +16,6 @@ IF (HAVE_CYTHON)
 	TARGET_LINK_LIBRARIES(py-shell
 		network
 		server # Python shell uses the cogserver atomspace
-		PythonEval
 		${ATOMSPACE_PythonEval_LIBRARY}
 		${ATOMSPACE_smob_LIBRARY}
 		${ATOMSPACE_LIBRARY}
