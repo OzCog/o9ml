@@ -34,4 +34,4 @@ extra-package-dbs: []
 #
 
 ghc-options:
-    opencoglib: -lHSrts-ghc8.0.2
+    opencoglib: -lHSrts-ghc8.6.5
