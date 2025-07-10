@@ -1737,6 +1737,20 @@ jobs:
           endif()
           EOF
           
+      - name: Build AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
       - name: Build and install unify
         run: |
           git clone --depth 1 https://github.com/opencog/unify /tmp/unify
