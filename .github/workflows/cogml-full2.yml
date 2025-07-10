@@ -256,6 +256,84 @@ jobs:
         run: |
           cd orc-as/atomspace-rocks/build
           make test || true
+          
+      - name: Install AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks/build
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpaceRocks CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfig.cmake - Minimal config file for AtomSpaceRocks
+
+          # Set version information
+          set(PACKAGE_VERSION "1.3.0")
+          set(AtomSpaceRocks_VERSION "1.3.0")
+          set(ATOMSPACE_ROCKS_VERSION "1.3.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_ROCKS_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpaceRocks_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_ROCKS_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpaceRocks_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the AtomSpaceRocks library
+          find_library(ATOMSPACE_ROCKS_LIBRARIES
+              NAMES atomspace-rocks
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpaceRocks_LIBRARIES ${ATOMSPACE_ROCKS_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_ROCKS_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpaceRocks_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace-rocks::atomspace-rocks)
+              add_library(atomspace-rocks::atomspace-rocks SHARED IMPORTED)
+              set_target_properties(atomspace-rocks::atomspace-rocks PROPERTIES
+                  IMPORTED_LOCATION "${ATOMSPACE_ROCKS_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${ATOMSPACE_ROCKS_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpaceRocks: ${ATOMSPACE_ROCKS_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
+
+          set(PACKAGE_VERSION "1.3.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
 
   atomspace-restful:
     runs-on: ubuntu-latest
@@ -1603,6 +1681,7 @@ jobs:
   # ==== Learning ====
   learn:
     runs-on: ubuntu-latest
+    needs: [atomspace-rocks]
 #    needs: [pln, miner, asmoses]
     steps:
       - uses: actions/checkout@v4
@@ -1750,6 +1829,78 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
+          
+          # Create AtomSpaceRocks CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfig.cmake - Minimal config file for AtomSpaceRocks
+
+          # Set version information
+          set(PACKAGE_VERSION "1.3.0")
+          set(AtomSpaceRocks_VERSION "1.3.0")
+          set(ATOMSPACE_ROCKS_VERSION "1.3.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_ROCKS_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpaceRocks_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_ROCKS_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpaceRocks_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the AtomSpaceRocks library
+          find_library(ATOMSPACE_ROCKS_LIBRARIES
+              NAMES atomspace-rocks
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpaceRocks_LIBRARIES \${ATOMSPACE_ROCKS_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_ROCKS_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpaceRocks_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace-rocks::atomspace-rocks)
+              add_library(atomspace-rocks::atomspace-rocks SHARED IMPORTED)
+              set_target_properties(atomspace-rocks::atomspace-rocks PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_ROCKS_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_ROCKS_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpaceRocks: \${ATOMSPACE_ROCKS_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
+
+          set(PACKAGE_VERSION "1.3.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
 
       - name: Build and install unify
         run: |
