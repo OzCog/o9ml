@@ -1,0 +1,273 @@
+name: CogML Cognitive Hypergraph Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/ccache
+
+jobs:
+  # === 1. Foundation Layer ===
+  cogutil:
+    name: Build: cogutil (Foundation)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cogutil
+        uses: actions/checkout@v4
+        with:
+          path: cogutil
+      - name: Setup ccache
+        uses: actions/cache@v4
+        with:
+          path: ccache
+          key: ${{ runner.os }}-ccache-cogutil-${{ github.sha }}
+      - name: Build cogutil
+        run: |
+          cd cogutil
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j2
+      - name: Test cogutil
+        run: |
+          cd cogutil/build
+          make test
+      - name: Install cogutil
+        run: |
+          cd cogutil/build
+          sudo make install
+      - name: Upload cogutil artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cogutil
+          path: cogutil/build
+
+  # === 2. Core Layer ===
+  atomspace:
+    name: Build: atomspace (Core)
+    runs-on: ubuntu-latest
+    needs: cogutil
+    steps:
+      - name: Checkout atomspace
+        uses: actions/checkout@v4
+        with:
+          path: atomspace
+      - name: Download cogutil artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cogutil
+          path: cogutil/build
+      - name: Build atomspace
+        run: |
+          cd atomspace
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j2
+      - name: Test atomspace
+        run: |
+          cd atomspace/build
+          make test
+      - name: Install atomspace
+        run: |
+          cd atomspace/build
+          sudo make install
+      - name: Upload atomspace artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: atomspace
+          path: atomspace/build
+
+  # === 3. Logic Layer ===
+  pln:
+    name: Build: pln (Logic)
+    runs-on: ubuntu-latest
+    needs: atomspace
+    steps:
+      - name: Checkout pln
+        uses: actions/checkout@v4
+        with:
+          path: pln
+      - name: Download atomspace artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: atomspace
+          path: atomspace/build
+      - name: Build pln
+        run: |
+          cd pln
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j2
+      - name: Test pln
+        run: |
+          cd pln/build
+          make test
+      - name: Install pln
+        run: |
+          cd pln/build
+          sudo make install
+      - name: Upload pln artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pln
+          path: pln/build
+
+  # === 4. Cognitive Systems Layer ===
+  moses:
+    name: Build: moses (Cognitive System)
+    runs-on: ubuntu-latest
+    needs: atomspace
+    steps:
+      - name: Checkout moses
+        uses: actions/checkout@v4
+        with:
+          path: moses
+      - name: Download atomspace artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: atomspace
+          path: atomspace/build
+      - name: Build moses
+        run: |
+          cd moses
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j2
+      - name: Test moses
+        run: |
+          cd moses/build
+          make test
+      - name: Install moses
+        run: |
+          cd moses/build
+          sudo make install
+      - name: Upload moses artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moses
+          path: moses/build
+
+  miner:
+    name: Build: miner (Cognitive System)
+    runs-on: ubuntu-latest
+    needs: atomspace
+    steps:
+      - name: Checkout miner
+        uses: actions/checkout@v4
+        with:
+          path: miner
+      - name: Download atomspace artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: atomspace
+          path: atomspace/build
+      - name: Build miner
+        run: |
+          cd miner
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j2
+      - name: Test miner
+        run: |
+          cd miner/build
+          make test
+      - name: Install miner
+        run: |
+          cd miner/build
+          sudo make install
+      - name: Upload miner artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: miner
+          path: miner/build
+
+  # === 5. Attention Allocation & Synergy Layer ===
+  attention:
+    name: Build: attention (Synergy/Attention)
+    runs-on: ubuntu-latest
+    needs: [pln, moses, miner]
+    steps:
+      - name: Checkout attention
+        uses: actions/checkout@v4
+        with:
+          path: attention
+      - name: Download pln artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pln
+          path: pln/build
+      - name: Download moses artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: moses
+          path: moses/build
+      - name: Download miner artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: miner
+          path: miner/build
+      - name: Build attention
+        run: |
+          cd attention
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j2
+      - name: Test attention
+        run: |
+          cd attention/build
+          make test
+      - name: Install attention
+        run: |
+          cd attention/build
+          sudo make install
+      - name: Upload attention artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: attention
+          path: attention/build
+
+  # === 6. Packaging & Embodiment Layer ===
+  package:
+    name: Package: All Modules (Embodiment)
+    runs-on: ubuntu-latest
+    needs: [attention]
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: attention
+          path: attention/build
+      - name: Package Cognitive System
+        run: |
+          # Example: package as .deb or .tar.gz
+          mkdir -p dist
+          tar czvf dist/cogml-cognitive-system.tar.gz attention/build
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: cogml-cognitive-system
+          path: dist/cogml-cognitive-system.tar.gz
+
+  # === 7. Meta-Cognition: Test & Synergy Validation ===
+  test-all:
+    name: Meta-Test: Systemic Synergy
+    runs-on: ubuntu-latest
+    needs: [package]
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: cogml-cognitive-system
+          path: dist
+      - name: Run Full System Test
+        run: |
+          # Example: integration test script
+          echo "Running system-wide cognitive integration test..."
+          # ./test/integration/test-all.sh dist/cogml-cognitive-system.tar.gz
