@@ -416,7 +416,9 @@ INCLUDE(CPack)
 # documentation
 FIND_PACKAGE(Doxygen)
 ADD_SUBDIRECTORY(doc EXCLUDE_FROM_ALL)
-ADD_SUBDIRECTORY(lib)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+	ADD_SUBDIRECTORY(lib)
+ENDIF()
 
 # ===================================================================
 # Show a summary of what we found, what we will do.
