@@ -1,7 +1,7 @@
 from libcpp.set cimport set
 from libcpp.vector cimport vector
-from opencog.atomspace cimport cHandle, cAtomSpace
-from opencog.logger cimport cLogger
+from atomspace cimport cHandle, cAtomSpace
+from logger cimport cLogger
 
 
 cdef extern from "opencog/ure/forwardchainer/ForwardChainer.h" namespace "opencog":

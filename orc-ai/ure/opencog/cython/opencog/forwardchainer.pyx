@@ -1,6 +1,8 @@
+# distutils: language = c++
 from opencog.atomspace import types
 from cython.operator cimport dereference as deref, preincrement as inc
-from opencog.atomspace cimport cHandle, Atom, AtomSpace, TruthValue
+from libcpp.vector cimport vector
+from atomspace cimport cHandle, Atom, AtomSpace, TruthValue, cAtomSpace
 from ure cimport cForwardChainer
 
 # Create a Cython extension type which holds a C++ instance
@@ -27,7 +29,7 @@ cdef class ForwardChainer:
         cdef vector[cHandle] handle_vector
         for atom in focus_set:
             if isinstance(atom, Atom):
-                handle_vector.push_back(deref((<Atom>(atom)).handle))
+                handle_vector.push_back((<Atom>(atom)).handle[0])
         cdef AtomSpace rbs_as = rbs.atomspace
         self.chainer = new cForwardChainer(deref(_as.atomspace),
                                         deref(rbs_as.atomspace),
