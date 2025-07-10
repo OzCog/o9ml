@@ -68,8 +68,26 @@ jobs:
           path: orc-dv/cogutil/build
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           
+      - name: Diagnostic workspace check
+        run: |
+          echo "WORKSPACE:"
+          ls -al
+          echo "orc-dv:"
+          ls -al orc-dv || true
+          echo "orc-dv/cogutil:"
+          ls -al orc-dv/cogutil || true
+          
       - name: Install cogutil
         run: |
+          # Check and rebuild cogutil if build directory missing
+          if [ ! -d "orc-dv/cogutil/build" ]; then
+            echo "cogutil build directory missing, rebuilding..."
+            cd orc-dv/cogutil
+            mkdir -p build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Release
+            make -j$(nproc)
+            cd ../../..
+          fi
           cd orc-dv/cogutil/build
           sudo make install
           sudo ldconfig
@@ -128,10 +146,47 @@ jobs:
             cogutil-${{ runner.os }}-${{ github.sha }}
             atomspace-${{ runner.os }}-${{ github.sha }}
           
+      - name: Diagnostic workspace check
+        run: |
+          echo "WORKSPACE:"
+          ls -al
+          echo "orc-dv:"
+          ls -al orc-dv || true
+          echo "orc-dv/cogutil:"
+          ls -al orc-dv/cogutil || true
+          echo "orc-as:"
+          ls -al orc-as || true
+          echo "orc-as/atomspace:"
+          ls -al orc-as/atomspace || true
+          
       - name: Install dependencies
         run: |
+          # Check and rebuild cogutil if build directory missing
+          if [ ! -d "orc-dv/cogutil/build" ]; then
+            echo "cogutil build directory missing, rebuilding..."
+            cd orc-dv/cogutil
+            mkdir -p build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Release
+            make -j$(nproc)
+            cd ../../..
+          fi
           cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          cd ../../orc-as/atomspace/build && sudo make install && sudo ldconfig
+          
+          # Check and rebuild atomspace if build directory missing  
+          if [ ! -d "orc-as/atomspace/build" ]; then
+            echo "atomspace build directory missing, rebuilding..."
+            cd orc-as/atomspace
+            # Create missing lib directory if it doesn't exist
+            if [ ! -d "lib" ]; then
+              mkdir -p lib
+              echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+            fi
+            mkdir -p build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Release
+            make -j$(nproc)
+            cd ../../..
+          fi
+          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
           
       - name: Build URE
         run: |
