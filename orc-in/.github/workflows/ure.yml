@@ -33,6 +33,27 @@ jobs:
             ccache-ure-${{ runner.os }}-
             ccache-ure-
 
+      - name: Install CogUtil
+        run: |
+          git clone --depth 1 https://github.com/opencog/cogutil /ws/cogutil
+          mkdir -p /ws/cogutil/build
+          cd /ws/cogutil/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      - name: Install AtomSpace
+        run: |
+          git clone --depth 1 https://github.com/opencog/atomspace /ws/atomspace
+          mkdir -p /ws/atomspace/build
+          cd /ws/atomspace/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      - name: Install Unify (URE dependency)
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /ws/unify
+          mkdir -p /ws/unify/build
+          cd /ws/unify/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
       - name: Configure Build
         run: |
           mkdir -p build

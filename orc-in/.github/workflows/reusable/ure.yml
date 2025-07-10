@@ -42,6 +42,27 @@ jobs:
       - name: Set number of make jobs
         run: echo "MAKEFLAGS=-j2" >> $GITHUB_ENV
 
+      - name: Install CogUtil
+        run: |
+          git clone --depth 1 https://github.com/opencog/cogutil /ws/cogutil
+          mkdir -p /ws/cogutil/build
+          cd /ws/cogutil/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      - name: Install AtomSpace
+        run: |
+          git clone --depth 1 https://github.com/opencog/atomspace /ws/atomspace
+          mkdir -p /ws/atomspace/build
+          cd /ws/atomspace/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      - name: Install Unify (URE dependency)
+        run: |
+          git clone --depth 1 https://github.com/opencog/unify /ws/unify
+          mkdir -p /ws/unify/build
+          cd /ws/unify/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
       - name: CMake Configure
         run: |
           mkdir -p build
@@ -72,7 +93,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ure
-          path: /ws/ure
+          path: build/
+
+      - name: Install URE
+        run: |
+          cd build && make -j2 install && ldconfig
 
       - name: Upload ccache artifact
         uses: actions/upload-artifact@v4
