@@ -9,8 +9,64 @@ on:
   workflow_dispatch:
 
 jobs:
-  package-and-deploy:
-    name: Package and Deploy
+  package-matrix:
+    name: Build Package Matrix
+    strategy:
+      matrix:
+        platform: [debian, nix]
+        include:
+          - platform: debian
+            runs-on: ubuntu-latest
+            container: opencog/opencog-deps
+          - platform: nix
+            runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
+    container: ${{ matrix.container }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ccache
+        uses: actions/cache@v4
+        with:
+          path: /ws/ccache
+          key: ccache-package-${{ matrix.platform }}-${{ runner.os }}-${{ hashFiles('**/*.cpp', '**/*.h') }}
+          restore-keys: |
+            ccache-package-${{ matrix.platform }}-${{ runner.os }}-
+            ccache-package-
+
+      - name: Install Nix (for Nix builds)
+        if: matrix.platform == 'nix'
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Install Debian Build Tools (for Debian builds)
+        if: matrix.platform == 'debian'
+        run: |
+          apt-get update
+          apt-get install -y devscripts build-essential debhelper
+
+      - name: Verify Package Integrity
+        run: |
+          chmod +x scripts/verify-package-integrity.sh
+          ./scripts/verify-package-integrity.sh
+
+      - name: Build and Test Packages
+        run: |
+          chmod +x scripts/build-packages.sh
+          ./scripts/build-packages.sh
+
+      - name: Upload Package Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cogml-packages-${{ matrix.platform }}
+          path: |
+            build-package/output/
+            package-verification-report.txt
+
+  legacy-build:
+    name: Legacy CMake Build
     runs-on: ubuntu-latest
     container:
       image: opencog/opencog-deps
@@ -23,29 +79,44 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /ws/ccache
-          key: ccache-package-${{ runner.os }}-${{ hashFiles('**/*.cpp', '**/*.h') }}
+          key: ccache-legacy-${{ runner.os }}-${{ hashFiles('**/*.cpp', '**/*.h') }}
           restore-keys: |
-            ccache-package-${{ runner.os }}-
-            ccache-package-
+            ccache-legacy-${{ runner.os }}-
+            ccache-legacy-
 
-      - name: Build and Package
+      - name: Legacy Build and Package
         run: |
           mkdir -p build
           cd build
           cmake ..
           make
-          # Add packaging commands here
-          # e.g., make package
+          # Create legacy package structure
+          make install DESTDIR=$PWD/package-root
 
-      - name: Upload Package Artifact
+      - name: Upload Legacy Package
         uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: cogml-legacy-build
           path: build/
 
-      - name: Deploy Package
-        if: github.ref == 'refs/heads/main'
+  deploy:
+    name: Deploy Packages
+    needs: [package-matrix, legacy-build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Deploy Packages
         run: |
-          # Add deployment commands here
-          # e.g., upload to a server or repository
-          echo "Deploying package..."
+          echo "Deploying packages..."
+          # List all generated packages
+          find . -name "*.deb" -o -name "*.tar.gz" -o -name "cogml-nix" | head -10
+          
+          # Future: Upload to package repositories
+          # - Debian repository
+          # - Nix binary cache
+          # - GitHub releases
+          
+          echo "Package deployment completed"

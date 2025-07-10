@@ -1,0 +1,9 @@
+cogml (0.1.0-1) unstable; urgency=medium
+
+  * Initial packaging release
+  * Implement packaging layer deployment genesis
+  * Add Debian and Nix package support
+  * Include package integrity verification
+  * Document packaging tensor shape structure
+
+ -- OpenCog Community <info@opencog.org>  Wed, 10 Jul 2024 10:40:00 +0000

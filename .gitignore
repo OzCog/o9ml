@@ -133,3 +133,21 @@ test-foundation/
 artifacts/
 foundation_build_report.json
 hardware_matrix_config.h
+
+# Packaging artifacts
+build-package/
+package-verification-report.txt
+*.deb
+*.tar.gz
+*.rpm
+debian/.debhelper/
+debian/tmp/
+debian/files
+debian/debhelper-build-stamp
+debian/cogml/
+debian/cogml-dev/
+
+# Nix
+result
+result-*
+.direnv/
