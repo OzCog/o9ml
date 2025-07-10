@@ -1,6 +1,6 @@
+# distutils: language = c++
 from cython.operator cimport dereference as deref
-from opencog.atomspace cimport Atom
-from opencog.atomspace cimport cHandle, AtomSpace, TruthValue
+from atomspace cimport Atom, cHandle, AtomSpace, TruthValue, cAtomSpace
 from opencog.atomspace import types
 from ure cimport cBackwardChainer
 

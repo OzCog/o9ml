@@ -1,0 +1,1 @@
+/home/runner/work/cogml/cogml/orc-as/atomspace/opencog/cython/opencog/atomspace.pxd
