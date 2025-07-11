@@ -276,7 +276,7 @@ MESSAGE(STATUS "  Logical: ${LOGICAL_TENSOR_DIM}D")
 
 # Create hardware configuration header for downstream components
 CONFIGURE_FILE(
-    "${CMAKE_CURRENT_SOURCE_DIR}/hardware_matrix_config.h.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/hardware_matrix_config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/hardware_matrix_config.h"
     @ONLY
 )
