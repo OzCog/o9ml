@@ -3073,6 +3073,83 @@ jobs:
           endif()
           EOF
           
+      - name: Build and install SpaceTime
+        run: |
+          # Always rebuild and install SpaceTime to ensure consistency
+          cd orc-ct/spacetime
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create SpaceTime CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/SpaceTime
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfig.cmake - Minimal config file for SpaceTime
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(SpaceTime_VERSION "0.1.4")
+          set(SPACETIME_VERSION "0.1.4")
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+          # Set basic variables
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+          # Set include directories
+          set(SPACETIME_INCLUDE_DIRS "/usr/local/include")
+          set(SpaceTime_INCLUDE_DIRS "/usr/local/include")
+          # Set library directories and libraries
+          set(SPACETIME_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(SpaceTime_LIBRARY_DIRS "/usr/local/lib/opencog")
+          # Find the SpaceTime libraries
+          find_library(SPACETIME_LIBRARIES
+              NAMES spacetime-types
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+          set(SpaceTime_LIBRARIES ${SPACETIME_LIBRARIES})
+          # Set other common variables
+          set(SPACETIME_DATA_DIR "/usr/local/share/opencog")
+          set(SpaceTime_DATA_DIR "/usr/local/share/opencog")
+          # Mark as found
+          set(SPACETIME_FOUND TRUE)
+          set(SpaceTime_FOUND TRUE)
+          # Export targets (minimal)
+          if(NOT TARGET spacetime::spacetime)
+              add_library(spacetime::spacetime SHARED IMPORTED)
+              set_target_properties(spacetime::spacetime PROPERTIES
+                  IMPORTED_LOCATION "${SPACETIME_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${SPACETIME_INCLUDE_DIRS}"
+              )
+          endif()
+          message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
+          # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
+          set(PACKAGE_VERSION "0.1.4")
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+          
       - name: Build and install cogserver
         run: |
           # Always rebuild and install cogserver to ensure consistency
