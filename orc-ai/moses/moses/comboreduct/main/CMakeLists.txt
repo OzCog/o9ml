@@ -106,11 +106,7 @@ INSTALL(TARGETS eval-table gen-table gen-disj-conj combo-fmt-converter
         RUNTIME DESTINATION bin)
 
 INSTALL(FILES
-
    tree_generation.h
-
-   DESTINATION
-
-   "include/${PROJECT_NAME}/comboreduct/main"
+   DESTINATION "include/${PROJECT_NAME}/comboreduct/main"
 )
 

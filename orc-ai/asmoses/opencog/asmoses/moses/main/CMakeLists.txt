@@ -63,8 +63,5 @@ INSTALL(FILES
         moses_exec.h
         moses_exec_def.h
         populate_atomspace.h
-
-	DESTINATION
-
-	"include/opencog/${PROJECT_NAME}/moses/main"
+	DESTINATION "include/opencog/${PROJECT_NAME}/moses/main"
 )

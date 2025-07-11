@@ -38,7 +38,7 @@ INSTALL(FILES
 	Summary.cmake
 	UseOCaml.cmake
 	COPYING-CMAKE-SCRIPTS
-	DESTINATION
+DESTINATION
 	${DATADIR}/cmake/)
 
 set(INCLUDE_INSTALL_DIR include/ )
@@ -61,5 +61,5 @@ write_basic_package_version_file(
 INSTALL(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/CogUtilConfigVersion.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/CogUtilConfig.cmake
-	DESTINATION
+DESTINATION
 	${COGUTIL_CMAKE_DIR})

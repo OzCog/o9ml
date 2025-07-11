@@ -35,7 +35,6 @@
 
 #install header files
 INSTALL(FILES
-
 	action_rules.h
 	branch_rules.h
 	contin_rules.h
@@ -47,8 +46,5 @@ INSTALL(FILES
 	perception_rules.h
 	fold_rules.h
 	reduct.h
-
-	DESTINATION
-
-	"include/${PROJECT_NAME}/comboreduct/reduct"
+	DESTINATION "include/${PROJECT_NAME}/comboreduct/reduct"
 )

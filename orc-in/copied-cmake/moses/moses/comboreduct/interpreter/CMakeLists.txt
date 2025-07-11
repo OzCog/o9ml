@@ -1,9 +1,7 @@
 #install header files
 INSTALL(FILES
-
 	interpreter.h
-
-	DESTINATION
+DESTINATION
 
 	"include/${PROJECT_NAME}/comboreduct/interpreter"
 )

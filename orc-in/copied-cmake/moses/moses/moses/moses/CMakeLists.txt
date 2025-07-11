@@ -9,8 +9,7 @@ INSTALL(FILES
 	mpi_moses.h
 	partial.h
 	types.h
-
-	DESTINATION
+DESTINATION
 
 	"include/${PROJECT_NAME}/moses/moses"
 )

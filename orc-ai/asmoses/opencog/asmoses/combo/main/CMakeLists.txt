@@ -42,10 +42,8 @@ INSTALL(TARGETS asgen-disj-conj ascombo-fmt-converter
         RUNTIME DESTINATION bin)
 
 INSTALL(FILES
-
         tree_generation.h
-
-   DESTINATION
+DESTINATION
 
    "include/opencog/${PROJECT_NAME}/combo/main"
 )

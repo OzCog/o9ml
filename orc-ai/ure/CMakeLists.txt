@@ -256,7 +256,7 @@ IF (CXXTEST_FOUND)
 ENDIF (CXXTEST_FOUND)
 
 IF (NOT WIN32)
-	ADD_CUSTOM_TARGET (examples
+	ADD_CUSTOM_TARGET (ure_examples
 		# using CMAKE_BUILD_TOOL results in teh cryptic error message
 		# warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
 		# This is because make doesn't know how to pass jobserver args to
@@ -269,7 +269,7 @@ IF (NOT WIN32)
 	)
 ENDIF (NOT WIN32)
 
-ADD_CUSTOM_TARGET(cscope
+ADD_CUSTOM_TARGET(ure_cscope
 	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

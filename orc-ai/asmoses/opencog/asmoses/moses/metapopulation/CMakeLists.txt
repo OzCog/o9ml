@@ -4,8 +4,5 @@ INSTALL(FILES
         ensemble_params.h
         metapopulation.h
         metapop_params.h
-
-	DESTINATION
-
-	"include/opencog/${PROJECT_NAME}/moses/metapopulation"
+	DESTINATION "include/opencog/${PROJECT_NAME}/moses/metapopulation"
 )

@@ -11,5 +11,5 @@ INSTALL(FILES
 	OpenCogOCaml.cmake
 	OpenCogMacros.cmake
 	OpenCogFunctions.cmake
-	DESTINATION
+DESTINATION
 	${DATADIR}/cmake/)

@@ -5,8 +5,5 @@ INSTALL(FILES
         star-anneal.h
         univariate.h
         particle-swarm.h
-
-	DESTINATION
-
-	"include/opencog/${PROJECT_NAME}/moses/optimization"
+	DESTINATION "include/opencog/${PROJECT_NAME}/moses/optimization"
 )

@@ -1,6 +1,5 @@
 #install header files
 INSTALL(FILES
-
 	action.h
 	action_symbol.h
 	ann.h
@@ -21,8 +20,7 @@ INSTALL(FILES
 	procedure_repository.h
 	simple_nn.h
 	vertex.h
-
-	DESTINATION
+DESTINATION
 
 	"include/${PROJECT_NAME}/comboreduct/combo"
 )

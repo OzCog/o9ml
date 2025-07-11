@@ -18,10 +18,8 @@ TARGET_LINK_LIBRARIES(eval-features
 
 #install header files
 INSTALL(FILES
-
 	feature-selection.h
-
-	DESTINATION
+DESTINATION
 
 	"include/${PROJECT_NAME}/feature-selection/main"
 )

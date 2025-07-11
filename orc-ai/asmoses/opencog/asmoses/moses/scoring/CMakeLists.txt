@@ -8,8 +8,5 @@ INSTALL(FILES
 		time_dispersion.h
 		ss_bscore.h
 		select_bscore.h
-
-	DESTINATION
-
-	"include/opencog/${PROJECT_NAME}/moses/scoring"
+	DESTINATION "include/opencog/${PROJECT_NAME}/moses/scoring"
 )

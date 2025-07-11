@@ -9,8 +9,5 @@ INSTALL(FILES
         mpi_moses.h
         partial.h
         types.h
-
-	DESTINATION
-
-	"include/opencog/${PROJECT_NAME}/moses/moses"
+	DESTINATION "include/opencog/${PROJECT_NAME}/moses/moses"
 )
