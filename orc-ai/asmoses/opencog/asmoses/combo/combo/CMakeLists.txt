@@ -1,6 +1,5 @@
 #install header files
 INSTALL(FILES
-
         action.h
         action_symbol.h
         ann.h
@@ -22,8 +21,7 @@ INSTALL(FILES
 		similarity.h
         simple_nn.h
         vertex.h
-
-	DESTINATION
+DESTINATION
 
 	"include/opencog/${PROJECT_NAME}/combo/combo"
 )

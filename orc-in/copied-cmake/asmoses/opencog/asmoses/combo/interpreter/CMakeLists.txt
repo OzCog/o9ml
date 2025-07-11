@@ -2,8 +2,7 @@
 INSTALL(FILES
 		eval.h
         interpreter.h
-
-	DESTINATION
+DESTINATION
 
 	"include/opencog/${PROJECT_NAME}/combo/interpreter"
 )

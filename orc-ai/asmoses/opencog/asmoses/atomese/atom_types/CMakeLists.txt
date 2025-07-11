@@ -29,10 +29,6 @@ ADD_GUILE_MODULE (FILES
 
 #install header files
 INSTALL(FILES
-
 		${CMAKE_CURRENT_BINARY_DIR}/atom_types.h
-
-		DESTINATION
-
-		"include/opencog/${PROJECT_NAME}/atomese/atom_types"
+		DESTINATION "include/opencog/${PROJECT_NAME}/atomese/atom_types"
 		)

@@ -18,5 +18,5 @@ write_basic_package_version_file(
 INSTALL(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/CogServerConfigVersion.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/CogServerConfig.cmake
-	DESTINATION
+DESTINATION
 	${COGSERVER_CMAKE_DIR})

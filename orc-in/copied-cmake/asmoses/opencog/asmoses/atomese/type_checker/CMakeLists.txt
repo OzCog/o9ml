@@ -1,9 +1,7 @@
 #install header files
 INSTALL(FILES
-
         AtomeseTypeChecker.h
-
-        DESTINATION
+DESTINATION
 
         "include/opencog/${PROJECT_NAME}/atomese/type_checker"
         )

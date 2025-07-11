@@ -17,10 +17,8 @@
 
 #install header files
 INSTALL(FILES
-
         exception.h
-
-	DESTINATION
+DESTINATION
 
 	"include/opencog/${PROJECT_NAME}/combo/crutil"
 )

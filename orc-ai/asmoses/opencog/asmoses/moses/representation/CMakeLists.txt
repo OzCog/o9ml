@@ -1,6 +1,5 @@
 #install header files
 INSTALL(FILES
-
         field_set.h
         instance.h
         scored_instance.h
@@ -14,8 +13,5 @@ INSTALL(FILES
         AtomeseRepresentation.h
         BuildAtomeseKnobs.h
         KnobLink.h
-
-        DESTINATION
-
-        "include/opencog/${PROJECT_NAME}/moses/representation"
+        DESTINATION "include/opencog/${PROJECT_NAME}/moses/representation"
 )

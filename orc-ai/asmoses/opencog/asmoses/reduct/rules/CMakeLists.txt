@@ -1,6 +1,5 @@
 #install header files
 INSTALL(FILES
-
 		action_rules.h
 		branch_rules.h
 		contin_rules.h
@@ -10,8 +9,7 @@ INSTALL(FILES
 		mixed_rules.h
 		perception_rules.h
 		fold_rules.h
-
-		DESTINATION
+DESTINATION
 
 		"include/opencog/${PROJECT_NAME}/reduct/rules"
 		)

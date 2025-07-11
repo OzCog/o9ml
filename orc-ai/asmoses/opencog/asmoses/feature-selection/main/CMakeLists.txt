@@ -19,10 +19,8 @@ TARGET_LINK_LIBRARIES(aseval-features
 
 #install header files
 INSTALL(FILES
-
         feature-selection.h
-
-	DESTINATION
+DESTINATION
 
 	"include/opencog/${PROJECT_NAME}/feature-selection/main"
 )

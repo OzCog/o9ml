@@ -17,10 +17,8 @@
 
 #install header files
 INSTALL(FILES
-
 	exception.h
-
-	DESTINATION
+DESTINATION
 
 	"include/${PROJECT_NAME}/comboreduct/crutil"
 )

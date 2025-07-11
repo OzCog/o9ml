@@ -5,8 +5,7 @@ INSTALL(FILES
 	star-anneal.h
 	univariate.h
 	particle-swarm.h
-
-	DESTINATION
+DESTINATION
 
 	"include/${PROJECT_NAME}/moses/optimization" 
 )
