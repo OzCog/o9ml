@@ -153,10 +153,121 @@ ENDIF (FOLLY_FOUND)
 include(OpenCogFindGuile)
 
 # ----------------------------------------------------------
-# By default, this uses Python3.
-# To use Python2 only, run the following in the build directory:
-# rm CMakeCache.txt && cmake -DCMAKE_DISABLE_FIND_PACKAGE_Python3Interp=TRUE ..
-include(OpenCogFindPython)
+# Use modern Python3 detection to avoid deprecated CMake modules
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+if(Python3_FOUND)
+    message(STATUS "Python3 found: ${Python3_EXECUTABLE}")
+    
+    # Set legacy variables for compatibility with existing build system
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+    set(PYTHON_VERSION_STRING ${Python3_VERSION})
+    set(PYTHONLIBS_VERSION_STRING ${Python3_VERSION})
+    set(PYTHONINTERP_FOUND TRUE)
+    set(PYTHONLIBS_FOUND TRUE)
+    set(PYTHON_LIBRARIES ${Python3_LIBRARIES})
+    # Extract first library from the list for PYTHON_LIBRARY (singular)
+    list(GET Python3_LIBRARIES 0 PYTHON_LIBRARY)
+    set(PYTHON_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
+    
+    # Set OpenCog-specific variables
+    if(Python3_VERSION VERSION_GREATER_EQUAL "3.4.0")
+        set(HAVE_PY_INTERP 1)
+        message(STATUS "Python ${Python3_VERSION} interpreter found.")
+    endif()
+    
+    if(Python3_FOUND AND Python3_VERSION VERSION_GREATER_EQUAL "3.4.0")
+        set(HAVE_PY_LIBS 1)
+        message(STATUS "Python ${Python3_VERSION} libraries found.")
+    endif()
+    
+    # Continue with Cython detection and other Python setup from OpenCogFindPython
+    # but skip the deprecated FIND_PACKAGE calls
+    include(CheckSymbolExists)
+    check_symbol_exists(secure_getenv "stdlib.h" HAVE_SECURE_GETENV)
+    if(HAVE_SECURE_GETENV)
+       add_definitions(-DHAVE_SECURE_GETENV)
+    endif()
+    
+    # Cython detection and setup
+    if(HAVE_PY_INTERP)
+        find_package(Cython 0.24.0)
+        
+        if(CYTHON_FOUND AND HAVE_PY_LIBS)
+            add_definitions(-DHAVE_CYTHON)
+            set(HAVE_CYTHON 1)
+            
+            if(NOT DEFINED PYTHON_INSTALL_PREFIX)
+                file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/scripts)
+                # Python install destination detection script
+                file(WRITE ${PROJECT_BINARY_DIR}/scripts/get_python_lib.py
+                    "import sys\n"
+                    "import sysconfig\n"
+                    "import site\n"
+                    "\n"
+                    "if __name__ == '__main__':\n"
+                    "    prefix = sys.argv[1]\n"
+                    "\n"
+                    "    # Use sites if the prefix is recognized and the sites module is available\n"
+                    "    # (virtualenv is missing getsitepackages())\n"
+                    "    if hasattr(site, 'getsitepackages'):\n"
+                    "        paths = [p for p in site.getsitepackages() if p.startswith(prefix)]\n"
+                    "        if len(paths) == 1:\n"
+                    "            print(paths[0])\n"
+                    "            exit(0)\n"
+                    "    \n"
+                    "    # Use sysconfig platlib as the fall back\n"
+                    "    print(sysconfig.get_paths()['platlib'])\n"
+                    )
+                
+                # Find python destination dir for python bindings
+                execute_process(
+                    COMMAND ${Python3_EXECUTABLE}
+                    "${PROJECT_BINARY_DIR}/scripts/get_python_lib.py"
+                    "${CMAKE_INSTALL_PREFIX}"
+                    OUTPUT_VARIABLE PYTHON_DEST
+                    )
+                
+                # Replace new line at end
+                string(REPLACE "\n" "" PYTHON_DEST "${PYTHON_DEST}")
+                if("${PYTHON_DEST}" STREQUAL "")
+                    message(FATAL_ERROR "Python destination dir not found")
+                else()
+                    message(STATUS "Python destination dir found: ${PYTHON_DEST}")
+                endif()
+                
+                # Set paths
+                set(PYTHON_ROOT "${PYTHON_DEST}")
+                set(PYTHON_DEST "${PYTHON_DEST}/opencog")
+            else()
+                set(PYTHON_ROOT "${PYTHON_INSTALL_PREFIX}")
+                set(PYTHON_DEST "${PYTHON_INSTALL_PREFIX}/opencog")
+            endif()
+            
+            message(STATUS "Python install dir: ${PYTHON_DEST}")
+        else()
+            if(NOT CYTHON_FOUND)
+                message(STATUS "Cython executable not found.")
+            endif()
+        endif()
+        
+        # Nosetests detection
+        if(PYTHONINTERP_FOUND AND PYTHONLIBS_FOUND)
+            if(Python3_VERSION VERSION_GREATER_EQUAL "3.4.0")
+                find_program(NOSETESTS_EXECUTABLE nosetests3)
+            endif()
+        endif()
+        if(NOT NOSETESTS_EXECUTABLE)
+            message(STATUS "nosetests not found: needed for python tests")
+        endif()
+        if(NOSETESTS_EXECUTABLE AND CYTHON_FOUND AND HAVE_PY_LIBS)
+            set(HAVE_NOSETESTS 1)
+            message(STATUS "Using nosetests executable " ${NOSETESTS_EXECUTABLE})
+        endif()
+    endif()
+else()
+    # Fallback to legacy method if modern Python3 detection fails
+    include(OpenCogFindPython)
+endif()
 
 # ----------------------------------------------------------
 # OCaml (optional; needed for the OCaml bindings.)
