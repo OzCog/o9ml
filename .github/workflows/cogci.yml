@@ -1,4 +1,4 @@
-name: CogML Full 2 Build
+name: CogML CI Build
 
 on:
   push:
