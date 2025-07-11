@@ -60,10 +60,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup ROS sources
+        run: |
+          sudo apt update
+          sudo apt install -y curl gnupg2 lsb-release
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
+          echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros-latest.list
+          sudo apt update
+      
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-rospy python3-catkin-tools python3-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-dev
+          
+      - name: Install ROS packages
+        run: |
+          sudo apt install -y python3-rospy python3-catkin-tools
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -267,10 +279,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup ROS sources
+        run: |
+          sudo apt update
+          sudo apt install -y curl gnupg2 lsb-release
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
+          echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros-latest.list
+          sudo apt update
+      
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose python3-rospy python3-catkin-tools python3-dev valgrind doxygen liboctomap-dev
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen liboctomap-dev
+          
+      - name: Install ROS packages
+        run: |
+          sudo apt install -y python3-rospy python3-catkin-tools
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
