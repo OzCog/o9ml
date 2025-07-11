@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose python3-dev valgrind doxygen
           
       - name: Build cogutil
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
           
       - name: Restore cogutil cache
         uses: actions/cache@v3
@@ -113,7 +113,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -266,7 +266,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev libcpprest-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev libcpprest-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -420,7 +420,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -591,7 +591,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -762,7 +762,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -933,7 +933,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose python3-dev valgrind doxygen
           
       - name: Restore cogutil cache
         uses: actions/cache@v3
@@ -977,7 +977,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -1149,7 +1149,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev libssl-dev cython3 python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev libssl-dev cython3 python3-nose python3-dev valgrind doxygen
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -1306,7 +1306,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose python3-dev valgrind doxygen
           
       - name: Restore cogutil cache
         uses: actions/cache@v3
@@ -1411,7 +1411,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev python3-nose valgrind doxygen
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev python3-nose python3-dev valgrind doxygen
           
       - name: Restore cogutil cache
         uses: actions/cache@v3
