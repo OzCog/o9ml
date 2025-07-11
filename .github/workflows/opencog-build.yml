@@ -106,7 +106,12 @@ jobs:
           
       - name: Install ROS packages
         run: |
-          sudo apt install -y python3-catkin-tools python3-catkin-pkg
+          sudo apt install -y python3-catkin-pkg
+          
+      - name: Install catkin-tools (Python 3)
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install catkin-tools
           
       - name: Set up mock catkin configuration for builds
         run: |
@@ -381,7 +386,12 @@ jobs:
           
       - name: Install ROS packages
         run: |
-          sudo apt install -y python3-catkin-tools python3-catkin-pkg
+          sudo apt install -y python3-catkin-pkg
+          
+      - name: Install catkin-tools (Python 3)
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install catkin-tools
           
       - name: Set up mock catkin configuration for builds
         run: |
