@@ -63,9 +63,9 @@ jobs:
       - name: Setup ROS sources
         run: |
           sudo apt update
-          sudo apt install -y curl gnupg2 lsb-release
-          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
-          echo "deb http://packages.ros.org/ros/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/ros-latest.list
+          sudo apt install -y curl gnupg2 lsb-release software-properties-common
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
           sudo apt update
       
       - name: Install build dependencies
@@ -106,7 +106,32 @@ jobs:
           
       - name: Install ROS packages
         run: |
-          sudo apt install -y python3-rospy python3-catkin-tools
+          sudo apt install -y python3-catkin-tools python3-catkin-pkg
+          
+      - name: Set up mock catkin configuration for builds
+        run: |
+          sudo mkdir -p /usr/local/share/cmake/catkin
+          sudo tee /usr/local/share/cmake/catkin/catkinConfig.cmake > /dev/null <<'EOF'
+          # Minimal catkin configuration for builds that do not actually need ROS
+          # This is a mock catkin configuration that satisfies CMake FIND_PACKAGE(catkin)
+          
+          set(catkin_FOUND TRUE)
+          set(CATKIN_FOUND TRUE)
+          
+          # Set minimal variables that catkin would normally provide
+          set(catkin_INCLUDE_DIRS "")
+          set(catkin_LIBRARIES "")
+          set(catkin_VERSION "1.0.0")
+          
+          # Mark the package as found
+          set(catkin_FOUND TRUE)
+          
+          message(STATUS "Mock catkin configuration loaded - ROS functionality disabled")
+          EOF
+          
+      - name: Set up CMAKE_MODULE_PATH for Catkin
+        run: |
+          echo "CMAKE_MODULE_PATH=/usr/local/share/cmake/catkin:$CMAKE_MODULE_PATH" >> $GITHUB_ENV
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
@@ -313,9 +338,9 @@ jobs:
       - name: Setup ROS sources
         run: |
           sudo apt update
-          sudo apt install -y curl gnupg2 lsb-release
-          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
-          echo "deb http://packages.ros.org/ros/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/ros-latest.list
+          sudo apt install -y curl gnupg2 lsb-release software-properties-common
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
           sudo apt update
       
       - name: Install build dependencies
@@ -356,7 +381,32 @@ jobs:
           
       - name: Install ROS packages
         run: |
-          sudo apt install -y python3-rospy python3-catkin-tools
+          sudo apt install -y python3-catkin-tools python3-catkin-pkg
+          
+      - name: Set up mock catkin configuration for builds
+        run: |
+          sudo mkdir -p /usr/local/share/cmake/catkin
+          sudo tee /usr/local/share/cmake/catkin/catkinConfig.cmake > /dev/null <<'EOF'
+          # Minimal catkin configuration for builds that do not actually need ROS
+          # This is a mock catkin configuration that satisfies CMake FIND_PACKAGE(catkin)
+          
+          set(catkin_FOUND TRUE)
+          set(CATKIN_FOUND TRUE)
+          
+          # Set minimal variables that catkin would normally provide
+          set(catkin_INCLUDE_DIRS "")
+          set(catkin_LIBRARIES "")
+          set(catkin_VERSION "1.0.0")
+          
+          # Mark the package as found
+          set(catkin_FOUND TRUE)
+          
+          message(STATUS "Mock catkin configuration loaded - ROS functionality disabled")
+          EOF
+          
+      - name: Set up CMAKE_MODULE_PATH for Catkin
+        run: |
+          echo "CMAKE_MODULE_PATH=/usr/local/share/cmake/catkin:$CMAKE_MODULE_PATH" >> $GITHUB_ENV
           
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
