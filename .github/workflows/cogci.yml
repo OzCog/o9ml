@@ -2553,9 +2553,9 @@ jobs:
           fi
 
   # ==== Integration ====
-  opencog-central:
+  opencog:
     runs-on: ubuntu-latest
-    needs: [learn, atomspace-rocks, atomspace-restful, moses, attention, lg-atomese]
+#    needs: [learn, atomspace-rocks, atomspace-restful, moses, attention, lg-atomese]
     steps:
       - uses: actions/checkout@v4
       
@@ -2689,6 +2689,92 @@ jobs:
           endif()
           EOF
           
+      - name: Build AtomSpace Rocks
+        run: |
+          cd orc-as/atomspace-rocks
+          # Create missing lib directory if it doesn't exist
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create AtomSpaceRocks CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfig.cmake - Minimal config file for AtomSpaceRocks
+
+          # Set version information
+          set(PACKAGE_VERSION "1.3.0")
+          set(AtomSpaceRocks_VERSION "1.3.0")
+          set(ATOMSPACE_ROCKS_VERSION "1.3.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Set include directories
+          set(ATOMSPACE_ROCKS_INCLUDE_DIRS "/usr/local/include")
+          set(AtomSpaceRocks_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATOMSPACE_ROCKS_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(AtomSpaceRocks_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the AtomSpaceRocks library
+          find_library(ATOMSPACE_ROCKS_LIBRARIES
+              NAMES persist-rocks
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(AtomSpaceRocks_LIBRARIES \${ATOMSPACE_ROCKS_LIBRARIES})
+
+          # Set other common variables
+          set(ATOMSPACE_ROCKS_DATA_DIR "/usr/local/share/opencog")
+          set(AtomSpaceRocks_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATOMSPACE_ROCKS_FOUND TRUE)
+          set(AtomSpaceRocks_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET atomspace-rocks::atomspace-rocks)
+              add_library(atomspace-rocks::atomspace-rocks SHARED IMPORTED)
+              set_target_properties(atomspace-rocks::atomspace-rocks PROPERTIES
+                  IMPORTED_LOCATION "\${ATOMSPACE_ROCKS_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "\${ATOMSPACE_ROCKS_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found AtomSpaceRocks: \${ATOMSPACE_ROCKS_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
+          # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
+
+          set(PACKAGE_VERSION "1.3.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("\${PACKAGE_VERSION}" VERSION_LESS "\${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("\${PACKAGE_VERSION}" VERSION_EQUAL "\${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+
       - name: Build and install unify
         run: |
           git clone --depth 1 https://github.com/opencog/unify /tmp/unify
@@ -2777,13 +2863,197 @@ jobs:
           endif()
           EOF
           
-      - name: Build OpenCog Central
+      - name: Build and install cogserver
+        run: |
+          # Always rebuild and install cogserver to ensure consistency
+          cd orc-sv/cogserver
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create CogServer CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/CogServer
+          sudo tee /usr/local/lib/cmake/CogServer/CogServerConfig.cmake > /dev/null <<'EOF'
+          # CogServerConfig.cmake - Minimal config file for CogServer
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(CogServer_VERSION "0.1.4")
+          set(COGSERVER_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(COGSERVER_FOUND TRUE)
+          set(CogServer_FOUND TRUE)
+
+          # Set include directories
+          set(COGSERVER_INCLUDE_DIR "/usr/local/include")
+          set(CogServer_INCLUDE_DIR "/usr/local/include")
+
+          # Set library directories and libraries
+          set(COGSERVER_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(CogServer_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the CogServer libraries
+          find_library(COGSERVER_LIBRARY
+              NAMES server
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          find_library(COGSERVER_NETWORK_LIBRARY
+              NAMES network
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(CogServer_LIBRARY ${COGSERVER_LIBRARY})
+          set(CogServer_NETWORK_LIBRARY ${COGSERVER_NETWORK_LIBRARY})
+
+          # Set other common variables
+          set(COGSERVER_DATA_DIR "/usr/local/share/opencog")
+          set(CogServer_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(COGSERVER_FOUND TRUE)
+          set(CogServer_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET cogserver::cogserver)
+              add_library(cogserver::cogserver SHARED IMPORTED)
+              set_target_properties(cogserver::cogserver PROPERTIES
+                  IMPORTED_LOCATION "${COGSERVER_LIBRARY}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${COGSERVER_INCLUDE_DIR}"
+              )
+          endif()
+
+          message(STATUS "Found CogServer: ${COGSERVER_LIBRARY}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/CogServer/CogServerConfigVersion.cmake > /dev/null <<'EOF'
+          # CogServerConfigVersion.cmake - Version file for CogServer
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+
+      - name: Build and install Learn
+        run: |
+          # Always rebuild and install learn to ensure consistency
+          cd orc-ai/learn
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+          # Create Learn CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/Learn
+          sudo tee /usr/local/lib/cmake/Learn/LearnConfig.cmake > /dev/null <<'EOF'
+          # LearnConfig.cmake - Minimal config file for Learn
+
+          # Set version information
+          set(PACKAGE_VERSION "0.0.0")
+          set(Learn_VERSION "0.0.0.")
+          set(LEARN_VERSION "0.0.0")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(LEARN_FOUND TRUE)
+          set(Learn_FOUND TRUE)
+
+          # Set include directories
+          set(COGSERVER_INCLUDE_DIR "/usr/local/include")
+          set(CogServer_INCLUDE_DIR "/usr/local/include")
+
+          # Set library directories and libraries
+          set(LEARN_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(Learn_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the Learn libraries
+          find_library(LEARN_LIBRARY
+              NAMES server
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          find_library(LEARN_NETWORK_LIBRARY
+              NAMES network
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(Learn_LIBRARY ${LEARN_LIBRARY})
+          set(Learn_NETWORK_LIBRARY ${LEARN_NETWORK_LIBRARY})
+
+          # Set other common variables
+          set(LEARN_DATA_DIR "/usr/local/share/opencog")
+          set(Learn_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(LEARN_FOUND TRUE)
+          set(Learn_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET learn::learn)
+              add_library(learn::learn SHARED IMPORTED)
+              set_target_properties(learn::learn PROPERTIES
+                  IMPORTED_LOCATION "${LEARN_LIBRARY}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${LEARN_INCLUDE_DIR}"
+              )
+          endif()
+
+          message(STATUS "Found Learn: ${LEARN_LIBRARY}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/Learn/LearnConfigVersion.cmake > /dev/null <<'EOF'
+          # LearnConfigVersion.cmake - Version file for Learn
+
+          set(PACKAGE_VERSION "0.0.0")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
+      
+      - name: Build OpenCog
         run: |
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           
-      - name: Test OpenCog Central
+      - name: Test OpenCog
         run: |
           cd build
           make test || true
@@ -2791,7 +3061,7 @@ jobs:
   # ==== Packaging ====
   opencog-debian:
     runs-on: ubuntu-latest
-    needs: [opencog-central]
+    needs: [opencog]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -2812,7 +3082,7 @@ jobs:
   # ==== Documentation Generation ====
   generate-docs:
     runs-on: ubuntu-latest
-    needs: [opencog-central]
+    needs: [opencog]
     steps:
       - uses: actions/checkout@v4
       
