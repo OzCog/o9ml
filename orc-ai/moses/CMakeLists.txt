@@ -265,7 +265,7 @@ ENDIF (CXXTEST_FOUND AND COGUTIL_FOUND)
 ADD_SUBDIRECTORY(examples EXCLUDE_FROM_ALL)
 
 IF (NOT WIN32)
-	ADD_CUSTOM_TARGET (examples
+	ADD_CUSTOM_TARGET (moses_examples
 		# using CMAKE_BUILD_TOOL results in teh cryptic error message
 		# warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
 		# This is because make doesn't know how to pass jobserver args to
@@ -279,7 +279,7 @@ IF (NOT WIN32)
 ENDIF (NOT WIN32)
 
 
-ADD_CUSTOM_TARGET(cscope
+ADD_CUSTOM_TARGET(moses_cscope
 	COMMAND find moses tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' > ${CMAKE_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

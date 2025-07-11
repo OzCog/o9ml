@@ -1,6 +1,5 @@
 #install header files
 INSTALL(FILES
-
 	field_set.h    
 	instance.h
 	scored_instance.h
@@ -10,8 +9,5 @@ INSTALL(FILES
 	knob_mapper.h
 	knobs.h
 	representation.h
-
-	DESTINATION
-
-	"include/${PROJECT_NAME}/moses/representation" 
+	DESTINATION "include/${PROJECT_NAME}/moses/representation" 
 )

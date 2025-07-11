@@ -4,8 +4,5 @@ INSTALL(FILES
 	ensemble_params.h
 	metapopulation.h
 	metapop_params.h
-
-	DESTINATION
-
-	"include/${PROJECT_NAME}/moses/metapopulation"
+	DESTINATION "include/${PROJECT_NAME}/moses/metapopulation"
 )
