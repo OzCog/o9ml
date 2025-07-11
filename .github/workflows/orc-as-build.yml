@@ -36,7 +36,11 @@ jobs:
             guile-3.0-dev \
             cython3 python3-nose python3-dev \
             valgrind doxygen \
-            pkg-config
+            pkg-config \
+            cxxtest \
+            libssl-dev \
+            unixodbc-dev \
+            libgtest-dev
 
       - name: Install Python dependencies
         run: python3 -m pip install --upgrade pip cython
@@ -85,7 +89,12 @@ jobs:
             guile-3.0-dev \
             cython3 python3-nose python3-dev \
             valgrind doxygen \
-            pkg-config
+            pkg-config \
+            cxxtest \
+            libssl-dev \
+            libpq-dev \
+            unixodbc-dev \
+            libgtest-dev
 
       - name: Install Python dependencies
         run: python3 -m pip install --upgrade pip cython
@@ -203,7 +212,11 @@ jobs:
             guile-3.0-dev \
             cython3 python3-nose python3-dev \
             valgrind doxygen \
-            pkg-config
+            pkg-config \
+            cxxtest \
+            libssl-dev \
+            unixodbc-dev \
+            libgtest-dev
           
           # Component-specific dependencies
           if [ "${{ matrix.component }}" = "atomspace-rocks" ]; then
@@ -305,7 +318,11 @@ jobs:
             guile-3.0-dev \
             cython3 python3-nose python3-dev \
             valgrind doxygen \
-            pkg-config
+            pkg-config \
+            cxxtest \
+            libssl-dev \
+            unixodbc-dev \
+            libgtest-dev
           
           # Component-specific dependencies
           if [ "${{ matrix.component }}" = "atomspace-restful" ]; then
@@ -405,7 +422,11 @@ jobs:
             guile-3.0-dev \
             cython3 python3-nose python3-dev \
             valgrind doxygen \
-            pkg-config
+            pkg-config \
+            cxxtest \
+            libssl-dev \
+            unixodbc-dev \
+            libgtest-dev
 
       - name: Install Python dependencies
         run: python3 -m pip install --upgrade pip cython
@@ -562,7 +583,15 @@ jobs:
             libboost-all-dev \
             guile-3.0-dev \
             python3-dev \
-            pkg-config
+            pkg-config \
+            cxxtest \
+            libssl-dev \
+            libpq-dev \
+            libmysqlclient-dev \
+            librocksdb-dev \
+            libcpprest-dev \
+            unixodbc-dev \
+            libgtest-dev
 
       - name: Restore all caches
         uses: actions/cache@v3
