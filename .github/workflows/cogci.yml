@@ -2340,6 +2340,78 @@ jobs:
           cd orc-ct/attention/build
           sudo make install
           sudo ldconfig
+          
+          # Create Attention CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/Attention
+          sudo tee /usr/local/lib/cmake/Attention/AttentionConfig.cmake > /dev/null <<'EOF'
+          # AttentionConfig.cmake - Minimal config file for Attention
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(Attention_VERSION "0.1.4")
+          set(ATTENTION_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(ATTENTION_FOUND TRUE)
+          set(Attention_FOUND TRUE)
+
+          # Set include directories
+          set(ATTENTION_INCLUDE_DIRS "/usr/local/include")
+          set(Attention_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(ATTENTION_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(Attention_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the Attention library
+          find_library(ATTENTION_LIBRARIES
+              NAMES attention
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(Attention_LIBRARIES ${ATTENTION_LIBRARIES})
+
+          # Set other common variables
+          set(ATTENTION_DATA_DIR "/usr/local/share/opencog")
+          set(Attention_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(ATTENTION_FOUND TRUE)
+          set(Attention_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET attention::attention)
+              add_library(attention::attention SHARED IMPORTED)
+              set_target_properties(attention::attention PROPERTIES
+                  IMPORTED_LOCATION "${ATTENTION_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${ATTENTION_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found Attention: ${ATTENTION_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/Attention/AttentionConfigVersion.cmake > /dev/null <<'EOF'
+          # AttentionConfigVersion.cmake - Version file for Attention
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
 
   # ==== Language Processing ====
   lg-atomese:
@@ -2495,6 +2567,78 @@ jobs:
           cd orc-nl/lg-atomese/build
           sudo make install
           sudo ldconfig
+          
+          # Create LG-Atomese CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/LGAtomese
+          sudo tee /usr/local/lib/cmake/LGAtomese/LGAtomeseConfig.cmake > /dev/null <<'EOF'
+          # LGAtomeseConfig.cmake - Minimal config file for LG-Atomese
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(LGAtomese_VERSION "0.1.4")
+          set(LGATOMESE_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(LGATOMESE_FOUND TRUE)
+          set(LGAtomese_FOUND TRUE)
+
+          # Set include directories
+          set(LGATOMESE_INCLUDE_DIRS "/usr/local/include")
+          set(LGAtomese_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(LGATOMESE_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(LGAtomese_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Find the LG-Atomese library
+          find_library(LGATOMESE_LIBRARIES
+              NAMES lg-atomese
+              PATHS /usr/local/lib/opencog
+              NO_DEFAULT_PATH
+          )
+
+          set(LGAtomese_LIBRARIES ${LGATOMESE_LIBRARIES})
+
+          # Set other common variables
+          set(LGATOMESE_DATA_DIR "/usr/local/share/opencog")
+          set(LGAtomese_DATA_DIR "/usr/local/share/opencog")
+
+          # Mark as found
+          set(LGATOMESE_FOUND TRUE)
+          set(LGAtomese_FOUND TRUE)
+
+          # Export targets (minimal)
+          if(NOT TARGET lg-atomese::lg-atomese)
+              add_library(lg-atomese::lg-atomese SHARED IMPORTED)
+              set_target_properties(lg-atomese::lg-atomese PROPERTIES
+                  IMPORTED_LOCATION "${LGATOMESE_LIBRARIES}"
+                  INTERFACE_INCLUDE_DIRECTORIES "${LGATOMESE_INCLUDE_DIRS}"
+              )
+          endif()
+
+          message(STATUS "Found LG-Atomese: ${LGATOMESE_LIBRARIES}")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/LGAtomese/LGAtomeseConfigVersion.cmake > /dev/null <<'EOF'
+          # LGAtomeseConfigVersion.cmake - Version file for LG-Atomese
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
 
   language-learning:
     runs-on: ubuntu-latest
@@ -2551,6 +2695,72 @@ jobs:
           else
             echo "No tests available for language-learning"
           fi
+          
+      - name: Install Language Learning
+        run: |
+          cd orc-nl/language-learning
+          # Install Python modules if setup.py exists
+          if [ -f "setup.py" ]; then
+            sudo python3 setup.py install
+          fi
+          
+          # Create Language-Learning CMake config files for dependent projects
+          sudo mkdir -p /usr/local/lib/cmake/LanguageLearning
+          sudo tee /usr/local/lib/cmake/LanguageLearning/LanguageLearningConfig.cmake > /dev/null <<'EOF'
+          # LanguageLearningConfig.cmake - Minimal config file for Language-Learning
+
+          # Set version information
+          set(PACKAGE_VERSION "0.1.4")
+          set(LanguageLearning_VERSION "0.1.4")
+          set(LANGUAGELEARNING_VERSION "0.1.4")
+
+          # Version compatibility check
+          set(PACKAGE_VERSION_EXACT FALSE)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_UNSUITABLE FALSE)
+
+          # Set basic variables
+          set(LANGUAGELEARNING_FOUND TRUE)
+          set(LanguageLearning_FOUND TRUE)
+
+          # Set include directories
+          set(LANGUAGELEARNING_INCLUDE_DIRS "/usr/local/include")
+          set(LanguageLearning_INCLUDE_DIRS "/usr/local/include")
+
+          # Set library directories and libraries
+          set(LANGUAGELEARNING_LIBRARY_DIRS "/usr/local/lib/opencog")
+          set(LanguageLearning_LIBRARY_DIRS "/usr/local/lib/opencog")
+
+          # Set data directories for language learning resources
+          set(LANGUAGELEARNING_DATA_DIR "/usr/local/share/opencog/language-learning")
+          set(LanguageLearning_DATA_DIR "/usr/local/share/opencog/language-learning")
+
+          # Mark as found
+          set(LANGUAGELEARNING_FOUND TRUE)
+          set(LanguageLearning_FOUND TRUE)
+
+          # Language learning is primarily Python-based, so set Python paths
+          set(LANGUAGELEARNING_PYTHON_DIR "/usr/local/lib/python3/dist-packages/language-learning")
+          set(LanguageLearning_PYTHON_DIR "/usr/local/lib/python3/dist-packages/language-learning")
+
+          message(STATUS "Found Language-Learning module")
+          EOF
+          
+          sudo tee /usr/local/lib/cmake/LanguageLearning/LanguageLearningConfigVersion.cmake > /dev/null <<'EOF'
+          # LanguageLearningConfigVersion.cmake - Version file for Language-Learning
+
+          set(PACKAGE_VERSION "0.1.4")
+
+          # Check whether the requested PACKAGE_FIND_VERSION is compatible
+          if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_COMPATIBLE FALSE)
+          else()
+            set(PACKAGE_VERSION_COMPATIBLE TRUE)
+            if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+              set(PACKAGE_VERSION_EXACT TRUE)
+            endif()
+          endif()
+          EOF
 
   # ==== Integration ====
   opencog:
