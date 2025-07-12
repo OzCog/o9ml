@@ -4559,7 +4559,7 @@ __Pyx_RefNannySetupContext("PyInit_backwardchainer", 0);
 
   /* "backwardchainer.pyx":4
  * from cython.operator cimport dereference as deref
- * from atomspace cimport Atom, cHandle, AtomSpace, TruthValue, cAtomSpace
+ * from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
  * from opencog.atomspace import types             # <<<<<<<<<<<<<<
  * from ure cimport cBackwardChainer
  * 
@@ -4623,7 +4623,7 @@ __Pyx_RefNannySetupContext("PyInit_backwardchainer", 0);
   /* "backwardchainer.pyx":1
  * # distutils: language = c++             # <<<<<<<<<<<<<<
  * from cython.operator cimport dereference as deref
- * from atomspace cimport Atom, cHandle, AtomSpace, TruthValue, cAtomSpace
+ * from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
 */
   __pyx_t_3 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
