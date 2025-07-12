@@ -3,7 +3,7 @@ from libcpp.string cimport string
 from libcpp.set cimport set as cpp_set
 from opencog.atomspace cimport AtomSpace, Atom, TruthValue, Value
 from opencog.atomspace cimport cValuePtr, create_python_value_from_c_value
-from opencog.atomspace cimport AtomSpace_factory
+from opencog.atomspace cimport AtomSpace_factory, UNDEFINED
 
 from contextlib import contextmanager
 from opencog.atomspace import create_child_atomspace
@@ -69,7 +69,7 @@ def add_link(Type t, outgoing, TruthValue tv=None):
             raise TypeError("outgoing set should contain atoms, got {0} instead".format(type(atom)))
     cdef cHandle result
     result = c_add_link(t, handle_vector)
-    if result == result.UNDEFINED: return None
+    if result == UNDEFINED: return None
     atom = create_python_value_from_c_value(<cValuePtr&>result)
     if tv is not None:
         atom.tv = tv
@@ -83,7 +83,7 @@ def add_node(Type t, atom_name, TruthValue tv=None):
     cdef string name = atom_name.encode('UTF-8')
     cdef cHandle result = c_add_node(t, name)
 
-    if result == result.UNDEFINED: return None
+    if result == UNDEFINED: return None
     atom = create_python_value_from_c_value(<cValuePtr&>result)
     if tv is not None:
         atom.tv = tv

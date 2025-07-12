@@ -3,7 +3,7 @@ from libcpp.set cimport set as cpp_set
 from libcpp.vector cimport vector
 from cython.operator cimport dereference as deref, preincrement as inc
 
-# from atomspace cimport *
+from atomspace cimport *
 
 
 # @todo use the guide here to separate out into a hierarchy
@@ -101,7 +101,7 @@ cdef class AtomSpace(Value):
 
     def add_atom(self, Atom atom):
         cdef cHandle result = self.atomspace.add_atom(atom.get_c_handle())
-        if result == result.UNDEFINED:
+        if result == UNDEFINED:
             return None
         return create_python_value_from_c_value(<cValuePtr&>result)
 
@@ -116,7 +116,7 @@ cdef class AtomSpace(Value):
         cdef string name = atom_name.encode('UTF-8')
         cdef cHandle result = self.atomspace.xadd_node(t, name)
 
-        if result == result.UNDEFINED: return None
+        if result == UNDEFINED: return None
         atom = Atom.createAtom(result);
         if tv :
             atom.tv = tv
@@ -134,7 +134,7 @@ cdef class AtomSpace(Value):
         cdef vector[cHandle] handle_vector = atom_list_to_vector(outgoing)
         cdef cHandle result
         result = self.atomspace.xadd_link(t, handle_vector)
-        if result == result.UNDEFINED: return None
+        if result == UNDEFINED: return None
         atom = Atom.createAtom(result);
         if tv :
             atom.tv = tv
@@ -195,7 +195,7 @@ cdef class AtomSpace(Value):
         """ Custom checker to see if object is in AtomSpace """
         cdef cHandle result
         result = self.atomspace.get_atom(deref((<Atom>(atom)).handle))
-        return result != result.UNDEFINED
+        return result != UNDEFINED
 
     # Maybe this should be called __repr__ ???
     def __str__(self):
@@ -259,12 +259,12 @@ cdef class AtomSpace(Value):
     def is_node_in_atomspace(self, Type t, s):
         cdef string name = s.encode('UTF-8')
         result = self.atomspace.get_handle(t, name)
-        return result != result.UNDEFINED
+        return result != UNDEFINED
 
     def is_link_in_atomspace(self, Type t, outgoing):
         cdef vector[cHandle] handle_vector = atom_list_to_vector(outgoing)
         result = self.atomspace.get_handle(t, handle_vector)
-        return result != result.UNDEFINED
+        return result != UNDEFINED
 
 
 cdef api object py_atomspace(cAtomSpace* c_atomspace) with gil:
