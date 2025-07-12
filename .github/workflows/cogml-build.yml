@@ -14,7 +14,7 @@ jobs:
 
   # ==== Foundation ====
   cogutil:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,7 +51,7 @@ jobs:
 
   # ==== Core AtomSpace ====
   atomspace:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [cogutil]
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +105,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
 
   atomspace-rocks:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
@@ -258,7 +258,7 @@ jobs:
           make test || true
 
   atomspace-restful:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
@@ -412,7 +412,7 @@ jobs:
 
   # ==== Logic ====
   ure:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
@@ -583,7 +583,7 @@ jobs:
 
   # ==== Advanced ====
   pln:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [ure]
     steps:
       - uses: actions/checkout@v4
@@ -754,7 +754,7 @@ jobs:
           make test || true
 
   miner:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [ure]
     steps:
       - uses: actions/checkout@v4
@@ -925,7 +925,7 @@ jobs:
           make test || true
 
   moses:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [cogutil]
     steps:
       - uses: actions/checkout@v4
@@ -969,7 +969,7 @@ jobs:
           make test || true
 
   asmoses:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [ure]
     steps:
       - uses: actions/checkout@v4
@@ -1141,7 +1141,7 @@ jobs:
 
   # ==== Server Infrastructure ====
   cogserver:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
@@ -1298,7 +1298,7 @@ jobs:
 
   # ==== Learning ====
   learn:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [pln, miner, asmoses, cogserver]
     steps:
       - uses: actions/checkout@v4
@@ -1403,7 +1403,7 @@ jobs:
 
   # ==== Integration ====
   opencog-central:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [learn, atomspace-rocks, atomspace-restful, moses]
     steps:
       - uses: actions/checkout@v4
@@ -1494,7 +1494,7 @@ jobs:
 
   # ==== Packaging ====
   opencog-debian:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [opencog-central]
     if: github.ref == 'refs/heads/main'
     steps:
@@ -1515,7 +1515,7 @@ jobs:
 
   # ==== Documentation Generation ====
   generate-docs:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [opencog-central]
     steps:
       - uses: actions/checkout@v4
