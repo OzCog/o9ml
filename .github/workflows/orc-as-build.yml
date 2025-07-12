@@ -620,3 +620,4 @@ jobs:
           find /usr/local/include -name "*atomspace*" 2>/dev/null | head -5 || echo "No atomspace headers found"
           echo "CMake config verification:"
           ls -la /usr/local/lib/cmake/AtomSpace/ 2>/dev/null || echo "No AtomSpace CMake config found"
+          
