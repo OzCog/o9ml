@@ -12,12 +12,14 @@ IF (DOXYGEN_FOUND)
 	CONFIGURE_FILE(
 		${PROJECT_SOURCE_DIR}/doc/Doxyfile
 		${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-	ADD_CUSTOM_TARGET (
-		doxygen
-		COMMAND ${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-		COMMENT "Generating documentation"
-	)
+	if(NOT TARGET doxygen)
+		ADD_CUSTOM_TARGET (
+			doxygen
+			COMMAND ${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+			COMMENT "Generating documentation"
+		)
+	endif()
 ELSE (DOXYGEN_FOUND)
     MESSAGE(STATUS "Doxygen not found, you won't be able to generate API documentation.")
 ENDIF (DOXYGEN_FOUND)

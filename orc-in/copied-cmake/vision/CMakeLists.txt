@@ -160,12 +160,14 @@ add_subdirectory(opencog)
 
 # set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
 
-add_custom_target(cscope
-	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
-	COMMAND cscope -b
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	COMMENT "Generating CScope database"
-)
+if(NOT TARGET cscope)
+	add_custom_target(cscope
+		COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
+		COMMAND cscope -b
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		COMMENT "Generating CScope database"
+	)
+endif()
 
 # ===================================================================
 # documentation
