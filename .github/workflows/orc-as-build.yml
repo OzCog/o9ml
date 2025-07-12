@@ -26,6 +26,8 @@ jobs:
       cogutil-cache-key: ${{ steps.cache-cogutil.outputs.cache-hit }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       
       - name: Install system dependencies
         run: |
@@ -79,6 +81,8 @@ jobs:
       atomspace-cache-key: ${{ steps.cache-atomspace.outputs.cache-hit }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       
       - name: Install system dependencies
         run: |
@@ -243,7 +247,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          cd ../../orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
 
       - name: Setup AtomSpace CMake config
         run: |
@@ -347,7 +351,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          cd ../../orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
 
       - name: Setup AtomSpace CMake config
         run: |
@@ -446,7 +450,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          cd ../../orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
 
       - name: Setup AtomSpace CMake config
         run: |
@@ -607,7 +611,7 @@ jobs:
       - name: Install all dependencies
         run: |
           cd orc-dv/cogutil/build && sudo make install && sudo ldconfig
-          cd ../../orc-as/atomspace/build && sudo make install && sudo ldconfig
+          cd orc-as/atomspace/build && sudo make install && sudo ldconfig
 
       - name: Run integration tests
         run: |
