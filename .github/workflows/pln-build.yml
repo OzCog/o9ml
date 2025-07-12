@@ -14,7 +14,7 @@ jobs:
 
   # ==== Advanced ====
   pln:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       
@@ -339,7 +339,7 @@ jobs:
           make test || true
 
   miner:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       
@@ -664,7 +664,7 @@ jobs:
           make test || true
 
   moses:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       
@@ -707,7 +707,7 @@ jobs:
           make test || true
 
   asmoses:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       

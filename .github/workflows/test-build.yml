@@ -13,7 +13,7 @@ jobs:
 
   # ==== Foundation ====
   cogutil:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,7 +50,7 @@ jobs:
 
   # ==== Core AtomSpace ====
   atomspace:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [cogutil]
     steps:
       - uses: actions/checkout@v4
@@ -123,7 +123,7 @@ jobs:
 
   # ==== Simple AI Component Test ====
   ure:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
@@ -208,7 +208,7 @@ jobs:
           
   # ==== Build Status Summary ====
   build-summary:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [cogutil, atomspace, ure]
     if: always()
     steps:
