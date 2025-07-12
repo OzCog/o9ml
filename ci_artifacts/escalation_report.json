@@ -1,0 +1,7 @@
+{
+  "status": "escalation_required",
+  "max_attempts_reached": 2,
+  "fix_history": [],
+  "timestamp": "2025-07-12T14:16:18.740963",
+  "summary": "Automated fixes failed after 2 attempts"
+}

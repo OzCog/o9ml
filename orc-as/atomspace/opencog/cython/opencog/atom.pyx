@@ -1,8 +1,17 @@
 from cpython cimport PyLong_FromLongLong
 from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 from libcpp.set cimport set as cpp_set
+from libcpp.vector cimport vector
+from cython.operator cimport dereference as deref
 
-# from atomspace cimport Atom
+from .atomspace cimport (
+    cHandle, cAtom, cAtomSpace, cValuePtr, tv_ptr, Type, 
+    PtrHolder, Value, TruthValue, back_inserter, 
+    AtomSpace_factory, createTruthValue, 
+    create_python_value_from_c_value,
+    convert_handle_seq_to_python_list,
+    convert_handle_set_to_python_list
+)
 
 # Atom wrapper object
 cdef class Atom(Value):
