@@ -2,7 +2,7 @@
 from opencog.atomspace import types
 from cython.operator cimport dereference as deref, preincrement as inc
 from libcpp.vector cimport vector
-from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
+from opencog.atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
 from ure cimport cForwardChainer
 
 # Create a Cython extension type which holds a C++ instance
@@ -29,15 +29,17 @@ cdef class ForwardChainer:
         cdef vector[cHandle] handle_vector
         for atom in focus_set:
             if isinstance(atom, Atom):
-                handle_vector.push_back((<Atom>(atom)).handle[0])
+                handle_vector.push_back(deref((<Atom>(atom)).handle))
         cdef AtomSpace rbs_as = rbs.atomspace
+        cdef cHandle rbs_handle = deref(rbs.handle)
+        cdef cHandle source_handle = deref(source.handle)
         self.chainer = new cForwardChainer(deref(_as.atomspace),
                                         deref(rbs_as.atomspace),
-                                        deref(rbs.handle),
-                                        deref(source.handle),
-                                        c_vardecl,
+                                        <const cHandle&>rbs_handle,
+                                        <const cHandle&>source_handle,
+                                        <const cHandle&>c_vardecl,
                                         <cAtomSpace*> (NULL if trace_as is None else trace_as.atomspace),
-                                        handle_vector)
+                                        <const vector[cHandle]&>handle_vector)
         self._as = _as
         self._trace_as = trace_as
 
