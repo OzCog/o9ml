@@ -3,7 +3,7 @@
 from opencog.atomspace import types
 from cython.operator cimport dereference as deref, preincrement as inc
 from libcpp.vector cimport vector
-from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
+from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace, UNDEFINED
 from ure cimport cForwardChainer
 
 # Create a Cython extension type which holds a C++ instance
@@ -23,7 +23,7 @@ cdef class ForwardChainer:
                   focus_set=[]):
         cdef cHandle c_vardecl
         if vardecl is None:
-            c_vardecl = cHandle.UNDEFINED
+            c_vardecl = UNDEFINED
         else:
             c_vardecl = deref(vardecl.handle)
 

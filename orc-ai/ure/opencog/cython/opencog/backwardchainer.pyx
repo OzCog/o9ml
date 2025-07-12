@@ -1,7 +1,7 @@
 # distutils: language = c++
 # cython: language_level=3
 from cython.operator cimport dereference as deref
-from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
+from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace, UNDEFINED
 from opencog.atomspace import types
 from ure cimport cBackwardChainer
 
@@ -28,7 +28,7 @@ cdef class BackwardChainer:
                   Atom focus_set=None):
         cdef cHandle c_vardecl
         if vardecl is None:
-            c_vardecl = cHandle.UNDEFINED
+            c_vardecl = UNDEFINED
         else:
             c_vardecl = deref(vardecl.handle)
         if focus_set is None:
