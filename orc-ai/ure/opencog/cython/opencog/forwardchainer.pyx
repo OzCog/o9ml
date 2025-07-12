@@ -2,7 +2,7 @@
 from opencog.atomspace import types
 from cython.operator cimport dereference as deref, preincrement as inc
 from libcpp.vector cimport vector
-from opencog.atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
+from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
 from ure cimport cForwardChainer
 
 # Create a Cython extension type which holds a C++ instance
