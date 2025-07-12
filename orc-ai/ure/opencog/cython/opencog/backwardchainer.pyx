@@ -5,6 +5,10 @@ from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
 from opencog.atomspace import types
 from ure cimport cBackwardChainer
 
+# Import UNDEFINED constant directly 
+cdef extern from "opencog/atoms/base/Handle.h" namespace "opencog":
+    cdef cHandle UNDEFINED "opencog::Handle::UNDEFINED"
+
 # Create a Cython extension type which holds a C++ instance
 # as an attribute and create a bunch of forwarding methods
 # Python extension type.
@@ -28,7 +32,7 @@ cdef class BackwardChainer:
                   Atom focus_set=None):
         cdef cHandle c_vardecl
         if vardecl is None:
-            c_vardecl = cHandle.UNDEFINED
+            c_vardecl = UNDEFINED
         else:
             c_vardecl = deref(vardecl.handle)
         if focus_set is None:

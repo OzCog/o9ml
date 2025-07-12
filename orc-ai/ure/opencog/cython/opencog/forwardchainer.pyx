@@ -6,6 +6,10 @@ from libcpp.vector cimport vector
 from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
 from ure cimport cForwardChainer
 
+# Import UNDEFINED constant directly 
+cdef extern from "opencog/atoms/base/Handle.h" namespace "opencog":
+    cdef cHandle UNDEFINED "opencog::Handle::UNDEFINED"
+
 # Create a Cython extension type which holds a C++ instance
 # as an attribute and create a bunch of forwarding methods
 # Python extension type.
@@ -23,7 +27,7 @@ cdef class ForwardChainer:
                   focus_set=[]):
         cdef cHandle c_vardecl
         if vardecl is None:
-            c_vardecl = cHandle.UNDEFINED
+            c_vardecl = UNDEFINED
         else:
             c_vardecl = deref(vardecl.handle)
 

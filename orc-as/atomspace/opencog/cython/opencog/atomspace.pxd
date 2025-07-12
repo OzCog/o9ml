@@ -165,7 +165,8 @@ cdef extern from "opencog/atoms/base/Handle.h" namespace "opencog":
         bint operator>(cHandle h)
         bint operator<=(cHandle h)
         bint operator>=(cHandle h)
-        cHandle UNDEFINED
+    
+    cdef cHandle UNDEFINED "opencog::Handle::UNDEFINED"
 # HandleSeq
     cdef cppclass cHandleSeq "opencog::HandleSeq"
 
