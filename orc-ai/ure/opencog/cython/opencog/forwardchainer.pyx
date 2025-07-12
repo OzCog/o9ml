@@ -3,8 +3,12 @@
 from opencog.atomspace import types
 from cython.operator cimport dereference as deref, preincrement as inc
 from libcpp.vector cimport vector
-from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace, UNDEFINED
+from atomspace cimport Atom, AtomSpace, cHandle, cAtomSpace
 from ure cimport cForwardChainer
+
+# Import UNDEFINED constant directly 
+cdef extern from "opencog/atoms/base/Handle.h" namespace "opencog":
+    cdef cHandle UNDEFINED "opencog::Handle::UNDEFINED"
 
 # Create a Cython extension type which holds a C++ instance
 # as an attribute and create a bunch of forwarding methods
