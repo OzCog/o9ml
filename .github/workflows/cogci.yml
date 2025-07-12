@@ -1,6 +1,7 @@
+---
 name: CogML CI Build (Self-Healing)
 
-on:
+"on":
   push:
     branches: [main]
   pull_request:
@@ -28,43 +29,43 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install cython
-          
+
       - name: Setup Self-Healing Environment
         run: |
           # Make auto-fix script executable
           chmod +x scripts/auto_fix.py
-          
+
           # Create artifacts directory
           mkdir -p ci_artifacts
-          
+
           echo "🧠 Self-Healing CI System Initialized"
           echo "Max attempts: $COGML_MAX_FIX_ATTEMPTS"
           echo "Auto-fix enabled: $COGML_AUTO_FIX_ENABLED"
-      
+
       - name: Test Self-Healing Capability
         run: |
           echo "🧪 Testing self-healing system..."
           python3 scripts/test_auto_fix.py
-          
+
       - name: Demonstrate Auto-Fix on Real Cython Error
         run: |
           echo "🔧 Demonstrating auto-fix on real Cython compilation..."
-          
+
           # Try to compile a known problematic Cython file
           cd orc-as/atomspace/opencog/cython/opencog
-          
+
           # First attempt - this will likely fail
           if python3 -m cython --cplus atom.pyx 2>&1 | tee /tmp/cython_build.log; then
             echo "✅ Cython compilation successful on first try!"
           else
             echo "❌ Cython compilation failed as expected"
             echo "🤖 Activating self-healing system..."
-            
+
             # Use our auto-fix script to attempt repairs
             cd /home/runner/work/cogml/cogml
             python3 scripts/auto_fix.py \
@@ -73,7 +74,7 @@ jobs:
               --repo-root .
           fi
         continue-on-error: true
-        
+
       - name: Upload Self-Healing Artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -82,13 +83,13 @@ jobs:
           path: |
             ci_artifacts/
             /tmp/cython_build.log
-        
+
       - name: Report Self-Healing Results
         if: always()
         run: |
           echo "📊 Self-Healing CI Report"
           echo "=========================="
-          
+
           if [ -f "ci_artifacts/success_report.json" ]; then
             echo "✅ Self-healing was successful!"
             cat ci_artifacts/success_report.json
@@ -98,7 +99,7 @@ jobs:
           else
             echo "ℹ️  Self-healing demonstration completed"
           fi
-          
+
           # List all artifacts generated
           echo ""
           echo "Generated artifacts:"
@@ -154,30 +155,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch full git history for versioning
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
-          
+
       - name: Build cogutil
         run: |
           cd orc-dv/cogutil
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test cogutil
         run: |
           cd orc-dv/cogutil/build
           make test || true
-          
+
       - name: Install cogutil
         run: |
           cd orc-dv/cogutil/build
           sudo make install
           sudo ldconfig
-          
+
       - name: Cache cogutil build
         uses: actions/cache@v3
         with:
@@ -192,24 +193,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch full git history for versioning
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
           path: orc-dv/cogutil/build
           key: cogutil-${{ runner.os }}-${{ github.sha }}
-          
+
       - name: Install cogutil
         run: |
           cd orc-dv/cogutil/build
           sudo make install
           sudo ldconfig
-          
+
       - name: Build AtomSpace with Self-Healing
         run: |
           cd orc-as/atomspace
@@ -219,23 +220,23 @@ jobs:
             echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
           fi
           mkdir -p build && cd build
-          
+
           # First attempt - try normal build
           if cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc); then
             echo "✅ AtomSpace build successful on first try!"
           else
             echo "❌ AtomSpace build failed, activating self-healing..."
-            
+
             # Check if auto-fix is enabled and available
             if [ "$COGML_AUTO_FIX_ENABLED" = "true" ] && [ -f "../../scripts/auto_fix.py" ]; then
               echo "🤖 Running self-healing auto-fix system..."
               cd ../../..
-              
+
               python3 scripts/auto_fix.py \
                 --build-cmd bash -c "cd orc-as/atomspace/build && make -j$(nproc)" \
                 --max-attempts $COGML_MAX_FIX_ATTEMPTS \
                 --repo-root .
-              
+
               # Check if fix was successful
               if [ $? -eq 0 ]; then
                 echo "✅ Self-healing resolved the build issues!"
@@ -248,18 +249,18 @@ jobs:
               exit 1
             fi
           fi
-          
+
       - name: Test AtomSpace
         run: |
           cd orc-as/atomspace/build
           make test || true
-          
+
       - name: Install AtomSpace
         run: |
           cd orc-as/atomspace/build
           sudo make install
           sudo ldconfig
-          
+
       - name: Cache atomspace build
         uses: actions/cache@v3
         with:
@@ -271,18 +272,18 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -290,7 +291,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -298,7 +299,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -311,8 +312,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -329,7 +330,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -385,7 +386,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -401,7 +402,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build AtomSpace Rocks
         run: |
           cd orc-as/atomspace-rocks
@@ -413,18 +414,18 @@ jobs:
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
           make -j$(nproc)
-          
+
       - name: Test AtomSpace Rocks
         run: |
           cd orc-as/atomspace-rocks/build
           make test || true
-          
+
       - name: Install AtomSpace Rocks
         run: |
           cd orc-as/atomspace-rocks/build
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpaceRocks CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
           sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
@@ -480,7 +481,7 @@ jobs:
 
           message(STATUS "Found AtomSpaceRocks: ${ATOMSPACE_ROCKS_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
 
@@ -502,18 +503,18 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev libcpprest-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -521,7 +522,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -529,7 +530,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -542,8 +543,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -560,7 +561,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -616,7 +617,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -644,7 +645,7 @@ jobs:
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
           make -j$(nproc)
-          
+
       - name: Test AtomSpace RESTful
         run: |
           cd orc-as/atomspace-restful/build
@@ -656,18 +657,18 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -675,7 +676,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -683,7 +684,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -696,8 +697,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -714,7 +715,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -770,7 +771,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -786,7 +787,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install unify
         run: |
           git clone --depth 1 https://github.com/opencog/unify /tmp/unify
@@ -803,18 +804,18 @@ jobs:
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
           make -j$(nproc)
-          
+
       - name: Test URE
         run: |
           cd orc-ai/ure/build
           make test || true
-          
+
       - name: Install URE
         run: |
           cd orc-ai/ure/build
           sudo make install
           sudo ldconfig
-          
+
       - name: Cache ure build
         uses: actions/cache@v3
         with:
@@ -826,18 +827,18 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -845,7 +846,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -853,7 +854,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -866,8 +867,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -884,7 +885,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -940,7 +941,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -956,7 +957,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install unify
         run: |
           git clone --depth 1 https://github.com/opencog/unify /tmp/unify
@@ -966,7 +967,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
       - name: Build and install URE
         run: |
           # Always rebuild and install URE to ensure consistency
@@ -979,7 +980,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create URE CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/URE
           sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
@@ -1028,7 +1029,7 @@ jobs:
 
           message(STATUS "Found URE: ${URE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
           # UREConfigVersion.cmake - Version file for URE
 
@@ -1044,7 +1045,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install SpaceTime
         run: |
           # Always rebuild and install SpaceTime to ensure consistency
@@ -1062,7 +1063,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create SpaceTime CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/SpaceTime
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
@@ -1118,7 +1119,7 @@ jobs:
 
           message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
           # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
 
@@ -1134,14 +1135,14 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build PLN
         run: |
           cd orc-ai/pln
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test PLN
         run: |
           cd orc-ai/pln/build
@@ -1151,18 +1152,18 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -1170,7 +1171,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -1178,7 +1179,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -1191,8 +1192,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -1209,7 +1210,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -1265,7 +1266,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -1281,7 +1282,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install unify
         run: |
           git clone --depth 1 https://github.com/opencog/unify /tmp/unify
@@ -1291,7 +1292,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
       - name: Build and install URE
         run: |
           # Always rebuild and install URE to ensure consistency
@@ -1304,7 +1305,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create URE CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/URE
           sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
@@ -1353,7 +1354,7 @@ jobs:
 
           message(STATUS "Found URE: ${URE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
           # UREConfigVersion.cmake - Version file for URE
 
@@ -1369,7 +1370,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install SpaceTime
         run: |
           # Always rebuild and install SpaceTime to ensure consistency
@@ -1387,7 +1388,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create SpaceTime CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/SpaceTime
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
@@ -1443,7 +1444,7 @@ jobs:
 
           message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
           # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
 
@@ -1459,14 +1460,14 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build Miner
         run: |
           cd orc-ai/miner
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test Miner
         run: |
           cd orc-ai/miner/build
@@ -1476,12 +1477,12 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose valgrind doxygen
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -1489,7 +1490,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -1502,14 +1503,14 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
       - name: Build MOSES
         run: |
           cd orc-ai/moses
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test MOSES
         run: |
           cd orc-ai/moses/build
@@ -1519,18 +1520,18 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -1538,7 +1539,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -1546,7 +1547,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -1559,8 +1560,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -1577,7 +1578,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -1633,7 +1634,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -1649,7 +1650,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install unify
         run: |
           git clone --depth 1 https://github.com/opencog/unify /tmp/unify
@@ -1659,7 +1660,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
       - name: Build and install URE
         run: |
           # Always rebuild and install URE to ensure consistency
@@ -1672,7 +1673,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create URE CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/URE
           sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
@@ -1721,7 +1722,7 @@ jobs:
 
           message(STATUS "Found URE: ${URE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
           # UREConfigVersion.cmake - Version file for URE
 
@@ -1737,7 +1738,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install SpaceTime
         run: |
           # Always rebuild and install SpaceTime to ensure consistency
@@ -1755,7 +1756,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create SpaceTime CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/SpaceTime
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
@@ -1811,7 +1812,7 @@ jobs:
 
           message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
           # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
 
@@ -1827,14 +1828,14 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build Asmoses
         run: |
           cd orc-ai/asmoses
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test Asmoses
         run: |
           cd orc-ai/asmoses/build
@@ -1847,18 +1848,18 @@ jobs:
 #    needs: [pln, miner, asmoses]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev python3-nose valgrind doxygen
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -1866,7 +1867,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -1874,7 +1875,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -1887,8 +1888,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -1905,7 +1906,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -1961,7 +1962,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -1977,7 +1978,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build AtomSpace Rocks
         run: |
           cd orc-as/atomspace-rocks
@@ -1991,7 +1992,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpaceRocks CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
           sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
@@ -2047,7 +2048,7 @@ jobs:
 
           message(STATUS "Found AtomSpaceRocks: \${ATOMSPACE_ROCKS_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
 
@@ -2086,7 +2087,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create URE CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/URE
           sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
@@ -2135,7 +2136,7 @@ jobs:
 
           message(STATUS "Found URE: ${URE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
           # UREConfigVersion.cmake - Version file for URE
 
@@ -2151,7 +2152,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install cogserver
         run: |
           # Always rebuild and install cogserver to ensure consistency
@@ -2164,7 +2165,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create CogServer CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/CogServer
           sudo tee /usr/local/lib/cmake/CogServer/CogServerConfig.cmake > /dev/null <<'EOF'
@@ -2227,7 +2228,7 @@ jobs:
 
           message(STATUS "Found CogServer: ${COGSERVER_LIBRARY}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/CogServer/CogServerConfigVersion.cmake > /dev/null <<'EOF'
           # CogServerConfigVersion.cmake - Version file for CogServer
 
@@ -2250,7 +2251,7 @@ jobs:
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test Learn
         run: |
           cd orc-ai/learn/build
@@ -2262,18 +2263,18 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -2281,7 +2282,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -2289,7 +2290,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -2302,8 +2303,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -2320,7 +2321,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -2376,7 +2377,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -2392,7 +2393,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install cogserver
         run: |
           # Always rebuild and install cogserver to ensure consistency
@@ -2405,7 +2406,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create CogServer CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/CogServer
           sudo tee /usr/local/lib/cmake/CogServer/CogServerConfig.cmake > /dev/null <<'EOF'
@@ -2468,7 +2469,7 @@ jobs:
 
           message(STATUS "Found CogServer: ${COGSERVER_LIBRARY}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/CogServer/CogServerConfigVersion.cmake > /dev/null <<'EOF'
           # CogServerConfigVersion.cmake - Version file for CogServer
 
@@ -2484,25 +2485,25 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build Attention
         run: |
           cd orc-ct/attention
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
           make -j$(nproc)
-          
+
       - name: Test Attention
         run: |
           cd orc-ct/attention/build
           make test || true
-          
+
       - name: Install Attention
         run: |
           cd orc-ct/attention/build
           sudo make install
           sudo ldconfig
-          
+
           # Create Attention CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/Attention
           sudo tee /usr/local/lib/cmake/Attention/AttentionConfig.cmake > /dev/null <<'EOF'
@@ -2558,7 +2559,7 @@ jobs:
 
           message(STATUS "Found Attention: ${ATTENTION_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/Attention/AttentionConfigVersion.cmake > /dev/null <<'EOF'
           # AttentionConfigVersion.cmake - Version file for Attention
 
@@ -2581,18 +2582,18 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -2600,7 +2601,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -2608,7 +2609,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -2621,8 +2622,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -2639,7 +2640,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -2695,7 +2696,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -2711,25 +2712,25 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build LG-Atomese
         run: |
           cd orc-nl/lg-atomese
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
           make -j$(nproc)
-          
+
       - name: Test LG-Atomese
         run: |
           cd orc-nl/lg-atomese/build
           make test || true
-          
+
       - name: Install LG-Atomese
         run: |
           cd orc-nl/lg-atomese/build
           sudo make install
           sudo ldconfig
-          
+
           # Create LG-Atomese CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/LGAtomese
           sudo tee /usr/local/lib/cmake/LGAtomese/LGAtomeseConfig.cmake > /dev/null <<'EOF'
@@ -2785,7 +2786,7 @@ jobs:
 
           message(STATUS "Found LG-Atomese: ${LGATOMESE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/LGAtomese/LGAtomeseConfigVersion.cmake > /dev/null <<'EOF'
           # LGAtomeseConfigVersion.cmake - Version file for LG-Atomese
 
@@ -2807,17 +2808,17 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev python3-nose python3-pip python3-dev
-          
+
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install numpy pandas matplotlib jupyter notebook
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -2825,7 +2826,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -2833,7 +2834,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -2846,7 +2847,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
       - name: Test Language Learning
         run: |
           cd orc-nl/language-learning
@@ -2857,7 +2858,7 @@ jobs:
           else
             echo "No tests available for language-learning"
           fi
-          
+
       - name: Install Language Learning
         run: |
           cd orc-nl/language-learning
@@ -2865,7 +2866,7 @@ jobs:
           if [ -f "setup.py" ]; then
             sudo python3 setup.py install
           fi
-          
+
           # Create Language-Learning CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/LanguageLearning
           sudo tee /usr/local/lib/cmake/LanguageLearning/LanguageLearningConfig.cmake > /dev/null <<'EOF'
@@ -2907,7 +2908,7 @@ jobs:
 
           message(STATUS "Found Language-Learning module")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/LanguageLearning/LanguageLearningConfigVersion.cmake > /dev/null <<'EOF'
           # LanguageLearningConfigVersion.cmake - Version file for Language-Learning
 
@@ -2930,18 +2931,18 @@ jobs:
     needs: [atomspace]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-rospy python3-catkin-tools python3-dev
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -2949,7 +2950,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -2957,7 +2958,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -2970,8 +2971,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -2988,7 +2989,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -3044,7 +3045,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -3060,7 +3061,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build ROS Behavior Scripting
         run: |
           cd orc-ro/ros-behavior-scripting
@@ -3068,12 +3069,12 @@ jobs:
           mkdir -p build && cd build
           # Try to build with minimal configuration, allowing failures
           cmake .. -DCMAKE_BUILD_TYPE=Release || echo "CMake configuration failed, installing modules manually"
-          
+
           # Install Guile modules manually if CMake fails
           sudo mkdir -p /usr/local/share/opencog/ros-behavior-scripting
           sudo cp -r ../movement/*.scm /usr/local/share/opencog/ros-behavior-scripting/ 2>/dev/null || true
           sudo cp -r ../scripts/* /usr/local/share/opencog/ros-behavior-scripting/ 2>/dev/null || true
-          
+
           # Create ROS Behavior Scripting CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/ROSBehaviorScripting
           sudo tee /usr/local/lib/cmake/ROSBehaviorScripting/ROSBehaviorScriptingConfig.cmake > /dev/null <<'EOF'
@@ -3103,7 +3104,7 @@ jobs:
 
           message(STATUS "Found ROS Behavior Scripting modules")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/ROSBehaviorScripting/ROSBehaviorScriptingConfigVersion.cmake > /dev/null <<'EOF'
           # ROSBehaviorScriptingConfigVersion.cmake - Version file for ROS Behavior Scripting
 
@@ -3119,7 +3120,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Test ROS Behavior Scripting
         run: |
           cd orc-ro/ros-behavior-scripting
@@ -3137,18 +3138,18 @@ jobs:
 #    needs: [learn, atomspace-rocks, atomspace-restful, moses, attention, lg-atomese]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev python3-nose valgrind doxygen liboctomap-dev
-          
+
       - name: Install Cython
         run: python3 -m pip install --upgrade pip cython
 
       - name: Verify Cython Installation
         run: python3 -m cython --version
-          
+
       - name: Restore cogutil cache
         uses: actions/cache@v3
         with:
@@ -3156,7 +3157,7 @@ jobs:
           key: cogutil-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             cogutil-${{ runner.os }}-
-            
+
       - name: Restore atomspace cache
         uses: actions/cache@v3
         with:
@@ -3164,7 +3165,7 @@ jobs:
           key: atomspace-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             atomspace-${{ runner.os }}-
-          
+
       - name: Build and install cogutil
         run: |
           # Always rebuild and install cogutil to ensure consistency
@@ -3177,8 +3178,8 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
-      - name: Build and install atomspace  
+
+      - name: Build and install atomspace
         run: |
           # Always rebuild and install atomspace to ensure consistency
           cd orc-as/atomspace
@@ -3195,7 +3196,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpace CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpace
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfig.cmake > /dev/null <<'EOF'
@@ -3251,7 +3252,7 @@ jobs:
 
           message(STATUS "Found AtomSpace: \${ATOMSPACE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpace/AtomSpaceConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceConfigVersion.cmake - Version file for AtomSpace
 
@@ -3267,7 +3268,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build AtomSpace Rocks
         run: |
           cd orc-as/atomspace-rocks
@@ -3281,7 +3282,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create AtomSpaceRocks CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/AtomSpaceRocks
           sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfig.cmake > /dev/null <<'EOF'
@@ -3337,7 +3338,7 @@ jobs:
 
           message(STATUS "Found AtomSpaceRocks: \${ATOMSPACE_ROCKS_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/AtomSpaceRocks/AtomSpaceRocksConfigVersion.cmake > /dev/null <<'EOF'
           # AtomSpaceRocksConfigVersion.cmake - Version file for AtomSpaceRocks
 
@@ -3376,7 +3377,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create URE CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/URE
           sudo tee /usr/local/lib/cmake/URE/UREConfig.cmake > /dev/null <<'EOF'
@@ -3425,7 +3426,7 @@ jobs:
 
           message(STATUS "Found URE: ${URE_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/URE/UREConfigVersion.cmake > /dev/null <<'EOF'
           # UREConfigVersion.cmake - Version file for URE
 
@@ -3441,7 +3442,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install SpaceTime
         run: |
           # Always rebuild and install SpaceTime to ensure consistency
@@ -3459,7 +3460,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create SpaceTime CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/SpaceTime
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfig.cmake > /dev/null <<'EOF'
@@ -3504,7 +3505,7 @@ jobs:
           endif()
           message(STATUS "Found SpaceTime: ${SPACETIME_LIBRARIES}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/SpaceTime/SpaceTimeConfigVersion.cmake > /dev/null <<'EOF'
           # SpaceTimeConfigVersion.cmake - Version file for SpaceTime
           set(PACKAGE_VERSION "0.1.4")
@@ -3518,7 +3519,7 @@ jobs:
             endif()
           endif()
           EOF
-          
+
       - name: Build and install cogserver
         run: |
           # Always rebuild and install cogserver to ensure consistency
@@ -3531,7 +3532,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create CogServer CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/CogServer
           sudo tee /usr/local/lib/cmake/CogServer/CogServerConfig.cmake > /dev/null <<'EOF'
@@ -3594,7 +3595,7 @@ jobs:
 
           message(STATUS "Found CogServer: ${COGSERVER_LIBRARY}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/CogServer/CogServerConfigVersion.cmake > /dev/null <<'EOF'
           # CogServerConfigVersion.cmake - Version file for CogServer
 
@@ -3623,7 +3624,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
-          
+
           # Create Learn CMake config files for dependent projects
           sudo mkdir -p /usr/local/lib/cmake/Learn
           sudo tee /usr/local/lib/cmake/Learn/LearnConfig.cmake > /dev/null <<'EOF'
@@ -3686,7 +3687,7 @@ jobs:
 
           message(STATUS "Found Learn: ${LEARN_LIBRARY}")
           EOF
-          
+
           sudo tee /usr/local/lib/cmake/Learn/LearnConfigVersion.cmake > /dev/null <<'EOF'
           # LearnConfigVersion.cmake - Version file for Learn
 
@@ -3702,13 +3703,13 @@ jobs:
             endif()
           endif()
           EOF
-      
+
       - name: Build OpenCog
         run: |
           mkdir -p build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          
+
       - name: Test OpenCog
         run: |
           cd build
@@ -3721,12 +3722,12 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install packaging dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential debhelper fakeroot
-          
+
       - name: Build Debian Package
         run: |
           if [ -d "debian" ]; then
@@ -3741,19 +3742,19 @@ jobs:
     needs: [opencog]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install documentation tools
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip graphviz
           pip3 install --user mermaid-cli
-          
+
       - name: Generate Mermaid diagrams
         run: |
           if [ -f "generate_mermaid_diagrams.py" ]; then
             python3 generate_mermaid_diagrams.py
           fi
-          
+
       - name: Upload documentation artifacts
         uses: actions/upload-artifact@v3
         with:
