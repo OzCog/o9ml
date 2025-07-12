@@ -218,6 +218,14 @@ private:
     float computePatternSimilarity(const HypergraphPattern& pattern1, const HypergraphPattern& pattern2);
     
     /**
+     * @brief Compute similarity between two atoms
+     * @param atom1 First atom
+     * @param atom2 Second atom
+     * @return Similarity score [0.0, 1.0]
+     */
+    float computeAtomSimilarity(const AtomSpaceAtom& atom1, const AtomSpaceAtom& atom2);
+    
+    /**
      * @brief Apply cognitive reasoning constraints
      * @param result Inference result to validate
      * @return true if result passes cognitive constraints
@@ -272,6 +280,19 @@ private:
     // Recursion tracking
     std::unordered_map<std::string, int> pattern_recursion_counts_;
     
+    /**
+     * @brief Parse AtomSpace query string
+     * @param query Query string to parse
+     * @return Vector of parsed atoms
+     */
+    std::vector<AtomSpaceAtom> parseAtomSpaceQuery(const std::string& query);
+    
+    /**
+     * @brief Parse hypergraph pattern from string
+     * @param pattern_str Pattern string to parse
+     * @return Parsed hypergraph pattern
+     */
+    HypergraphPattern parseHypergraphPattern(const std::string& pattern_str);
     // Neural attention weights
     std::unordered_map<std::string, float> global_attention_weights_;
 };

@@ -1,0 +1,124 @@
+# CMake configuration for Neural-Symbolic Synthesis Phase 3
+cmake_minimum_required(VERSION 3.16)
+project(neural_symbolic_synthesis)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Set build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Add compiler flags for optimization and neural-symbolic operations
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
+
+# Include directories
+include_directories(.)
+include_directories(orchestral-architect/src)
+
+# Source files for the neural-symbolic kernels
+set(KERNEL_SOURCES
+    orchestral-architect/src/core/AgenticKernel.cpp
+    orchestral-architect/src/kernels/SymbolicTensorKernel.cpp
+    orchestral-architect/src/kernels/NeuralInferenceKernel.cpp
+    orchestral-architect/src/kernels/HypergraphKernel.cpp
+    orchestral-architect/src/benchmarks/NeuralSymbolicBenchmark.cpp
+)
+
+# Header files
+set(KERNEL_HEADERS
+    orchestral-architect/src/core/AgenticKernel.h
+    orchestral-architect/src/core/KernelRegistry.h
+    orchestral-architect/src/kernels/SymbolicTensorKernel.h
+    orchestral-architect/src/kernels/NeuralInferenceKernel.h
+    orchestral-architect/src/kernels/HypergraphKernel.h
+    orchestral-architect/src/benchmarks/NeuralSymbolicBenchmark.h
+)
+
+# Create neural-symbolic synthesis library
+add_library(neural_symbolic_synthesis STATIC ${KERNEL_SOURCES} ${KERNEL_HEADERS})
+
+# Neural-symbolic synthesis demonstration executable
+add_executable(neural_symbolic_demo neural_symbolic_synthesis_demo.cpp)
+target_link_libraries(neural_symbolic_demo neural_symbolic_synthesis)
+
+# Benchmark executable
+add_executable(neural_symbolic_benchmark 
+    benchmark_runner.cpp
+    ${KERNEL_SOURCES}
+)
+
+# Test executables
+add_executable(test_tensor_signature test_tensor_signature.cpp)
+target_link_libraries(test_tensor_signature neural_symbolic_synthesis)
+
+add_executable(test_inference_pipeline test_inference_pipeline.cpp)
+target_link_libraries(test_inference_pipeline neural_symbolic_synthesis)
+
+add_executable(test_hypergraph_operations test_hypergraph_operations.cpp)
+target_link_libraries(test_hypergraph_operations neural_symbolic_synthesis)
+
+# Install targets
+install(TARGETS neural_symbolic_synthesis neural_symbolic_demo
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(FILES ${KERNEL_HEADERS}
+    DESTINATION include/neural_symbolic_synthesis
+)
+
+# Testing configuration
+enable_testing()
+
+add_test(NAME tensor_signature_validation 
+         COMMAND test_tensor_signature)
+         
+add_test(NAME inference_pipeline_validation 
+         COMMAND test_inference_pipeline)
+         
+add_test(NAME hypergraph_operations_validation 
+         COMMAND test_hypergraph_operations)
+
+add_test(NAME complete_demonstration 
+         COMMAND neural_symbolic_demo)
+
+# Custom target for running all neural-symbolic tests
+add_custom_target(neural_symbolic_tests
+    COMMAND ${CMAKE_CTEST_COMMAND} --verbose
+    DEPENDS test_tensor_signature test_inference_pipeline test_hypergraph_operations neural_symbolic_demo
+    COMMENT "Running Neural-Symbolic Synthesis validation tests"
+)
+
+# Performance benchmarking target
+add_custom_target(neural_symbolic_benchmark_run
+    COMMAND neural_symbolic_benchmark
+    DEPENDS neural_symbolic_benchmark
+    COMMENT "Running Neural-Symbolic performance benchmarks"
+)
+
+# Documentation target
+find_program(DOXYGEN_EXECUTABLE doxygen)
+if(DOXYGEN_EXECUTABLE)
+    add_custom_target(neural_symbolic_docs
+        COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Generating Neural-Symbolic Synthesis documentation"
+    )
+endif()
+
+# Summary message
+message(STATUS "Neural-Symbolic Synthesis Phase 3 Configuration")
+message(STATUS "================================================")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Targets configured:")
+message(STATUS "  - neural_symbolic_synthesis (library)")
+message(STATUS "  - neural_symbolic_demo (demonstration)")
+message(STATUS "  - neural_symbolic_benchmark (performance testing)")
+message(STATUS "  - test_* (validation tests)")
+message(STATUS "Run 'make neural_symbolic_tests' to validate implementation")
+message(STATUS "Run 'make neural_symbolic_demo' to see demonstration")

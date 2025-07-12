@@ -345,6 +345,20 @@ private:
     std::atomic<float> total_memory_used_mb_{0.0f};
     std::chrono::milliseconds total_processing_time_{0};
     
+    /**
+     * @brief Parse symbolic expressions from input string
+     * @param input Input string containing expressions
+     * @return Vector of parsed expressions
+     */
+    std::vector<std::string> parseExpressions(const std::string& input);
+    
+    /**
+     * @brief Parse operation data from input string  
+     * @param input Input string containing operation parameters
+     * @return Map of parsed operation data
+     */
+    std::unordered_map<std::string, std::string> parseOperationData(const std::string& input);
+
     // Custom ggml operators (placeholder for actual ggml integration)
     void* hypergraph_ggml_context_;
     std::unordered_map<std::string, void*> custom_operators_;

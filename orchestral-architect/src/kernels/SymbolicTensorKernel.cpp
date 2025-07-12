@@ -80,7 +80,12 @@ CognitiveResult SymbolicTensorKernel::process(const CognitiveInput& input) {
     try {
         if (input.type == "symbolic_expression") {
             // Create neural-symbolic tensor from symbolic expression
-            auto tensor = createFromSymbolic(input.data, input.contextWeights);
+            // Convert map<string, double> to unordered_map<string, float>
+            std::unordered_map<std::string, float> context_weights;
+            for (const auto& weight : input.contextWeights) {
+                context_weights[weight.first] = static_cast<float>(weight.second);
+            }
+            auto tensor = createFromSymbolic(input.data, context_weights);
             
             // Validate tensor signature
             if (!validateTensorSignature(tensor)) {
@@ -132,8 +137,12 @@ CognitiveResult SymbolicTensorKernel::process(const CognitiveInput& input) {
             else if (op_name == "inference_step") op = SymbolicTensorOp::INFERENCE_STEP;
             
             // Create example tensor for demonstration
+            std::unordered_map<std::string, float> demo_context;
+            for (const auto& weight : input.contextWeights) {
+                demo_context[weight.first] = static_cast<float>(weight.second);
+            }
             std::vector<NeuralSymbolicTensor> input_tensors = {
-                createFromSymbolic("(+ A B)", input.contextWeights)
+                createFromSymbolic("(+ A B)", demo_context)
             };
             
             auto tensor_result = executeOperation(op, input_tensors);
@@ -330,8 +339,9 @@ SymbolicTensorResult SymbolicTensorKernel::executeOperation(
     // Estimate memory usage
     result.memory_usage_mb = static_cast<float>(result.result_tensor.neural_embedding.size() * sizeof(float)) / (1024 * 1024);
     
-    // Update total memory tracking
-    total_memory_used_mb_.fetch_add(result.memory_usage_mb);
+    // Update total memory tracking (use store instead of fetch_add for float)
+    float current_memory = total_memory_used_mb_.load();
+    total_memory_used_mb_.store(current_memory + result.memory_usage_mb);
     
     return result;
 }

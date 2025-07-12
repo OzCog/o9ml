@@ -304,7 +304,9 @@ HypergraphResult HypergraphKernel::executeHypergraphOp(HypergraphOp op,
         }
         
         result.memory_usage_mb = estimated_memory;
-        total_memory_used_mb_.fetch_add(estimated_memory);
+        // Update total memory tracking (use store for atomic float)
+        float current_memory = total_memory_used_mb_.load();
+        total_memory_used_mb_.store(current_memory + estimated_memory);
         
         switch (op) {
             case HypergraphOp::NODE_ACTIVATION: {
