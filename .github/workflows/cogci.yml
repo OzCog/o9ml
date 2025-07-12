@@ -825,6 +825,7 @@ jobs:
   # ==== Advanced ====
   pln:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [ure]
     steps:
       - uses: actions/checkout@v4
 
@@ -1150,6 +1151,7 @@ jobs:
 
   miner:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [ure]
     steps:
       - uses: actions/checkout@v4
 
@@ -1475,6 +1477,7 @@ jobs:
 
   moses:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [cogutil]
     steps:
       - uses: actions/checkout@v4
 
@@ -1518,6 +1521,7 @@ jobs:
 
   asmoses:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [ure]
     steps:
       - uses: actions/checkout@v4
 
@@ -3632,7 +3636,7 @@ jobs:
 
           # Set version information
           set(PACKAGE_VERSION "0.0.0")
-          set(Learn_VERSION "0.0.0.")
+          set(Learn_VERSION "0.0.0")
           set(LEARN_VERSION "0.0.0")
 
           # Version compatibility check
@@ -3645,8 +3649,8 @@ jobs:
           set(Learn_FOUND TRUE)
 
           # Set include directories
-          set(COGSERVER_INCLUDE_DIR "/usr/local/include")
-          set(CogServer_INCLUDE_DIR "/usr/local/include")
+          set(LEARN_INCLUDE_DIR "/usr/local/include")
+          set(Learn_INCLUDE_DIR "/usr/local/include")
 
           # Set library directories and libraries
           set(LEARN_LIBRARY_DIRS "/usr/local/lib/opencog")
@@ -3654,19 +3658,12 @@ jobs:
 
           # Find the Learn libraries
           find_library(LEARN_LIBRARY
-              NAMES server
-              PATHS /usr/local/lib/opencog
-              NO_DEFAULT_PATH
-          )
-
-          find_library(LEARN_NETWORK_LIBRARY
-              NAMES network
+              NAMES learn
               PATHS /usr/local/lib/opencog
               NO_DEFAULT_PATH
           )
 
           set(Learn_LIBRARY ${LEARN_LIBRARY})
-          set(Learn_NETWORK_LIBRARY ${LEARN_NETWORK_LIBRARY})
 
           # Set other common variables
           set(LEARN_DATA_DIR "/usr/local/share/opencog")
