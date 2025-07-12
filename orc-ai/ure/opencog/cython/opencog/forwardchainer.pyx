@@ -1,4 +1,5 @@
 # distutils: language = c++
+# cython: language_level=3
 from opencog.atomspace import types
 from cython.operator cimport dereference as deref, preincrement as inc
 from libcpp.vector cimport vector
@@ -22,7 +23,7 @@ cdef class ForwardChainer:
                   focus_set=[]):
         cdef cHandle c_vardecl
         if vardecl is None:
-            c_vardecl = c_vardecl.UNDEFINED
+            c_vardecl = cHandle.UNDEFINED
         else:
             c_vardecl = deref(vardecl.handle)
 
