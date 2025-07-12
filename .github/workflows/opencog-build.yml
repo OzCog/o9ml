@@ -15,43 +15,43 @@ jobs:
   # ==== Matrix-based OpenCog Core Build (Reference Implementation) ====
   # This job demonstrates the matrix approach outlined in the issue requirements
   # Currently disabled but can be enabled for external repo building
-#  opencog-matrix:
-#    if: false  # Disabled by default - enable for external repo testing
-#    runs-on: ubuntu-latest
-#    strategy:
-#      matrix:
-#        repo:
-#          - cogutil
-#          - atomspace
-#          - cogserver
-#          - attention
-#          - URE
-#          - pln
-#          - spacetime
-#          - ros-behavior-scripting
-#          - lg-atomese
-#    steps:
-#      - name: Clone ${{ matrix.repo }}
-#        run: git clone https://github.com/opencog/${{ matrix.repo }}.git
+  opencog-matrix:
+    if: true  # Disabled by default - enable for external repo testing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo:
+          - cogutil
+          - atomspace
+          - cogserver
+          - attention
+          - URE
+          - pln
+          - spacetime
+          - ros-behavior-scripting
+          - lg-atomese
+    steps:
+      - name: Clone ${{ matrix.repo }}
+        run: git clone https://github.com/opencog/${{ matrix.repo }}.git
 
-#      - name: Install build dependencies
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
 
-#      - name: Build ${{ matrix.repo }}
-#        run: |
-#          cd ${{ matrix.repo }}
-#          mkdir -p build && cd build
-#          cmake .. -DCMAKE_BUILD_TYPE=Release || echo "CMake failed for ${{ matrix.repo }}"
-#          make -j$(nproc) || echo "Build failed for ${{ matrix.repo }}"
-#          sudo make install || echo "Install failed for ${{ matrix.repo }}"
-#          sudo ldconfig
+      - name: Build ${{ matrix.repo }}
+        run: |
+          cd ${{ matrix.repo }}
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release || echo "CMake failed for ${{ matrix.repo }}"
+          make -j$(nproc) || echo "Build failed for ${{ matrix.repo }}"
+          sudo make install || echo "Install failed for ${{ matrix.repo }}"
+          sudo ldconfig
 
-#      - name: Run Unit Tests
-#        run: |
-#          cd ${{ matrix.repo }}/build
-#          make test || echo "Tests failed or not available for ${{ matrix.repo }}"
+      - name: Run Unit Tests
+        run: |
+          cd ${{ matrix.repo }}/build
+          make test || echo "Tests failed or not available for ${{ matrix.repo }}"
 
   # ==== Robotics ====
   ros-behavior-scripting:
