@@ -167,6 +167,12 @@ jobs:
           echo "orc-as/atomspace:"
           ls -al orc-as/atomspace || true
           
+      - name: Verify atomspace directory exists
+        run: |
+          if [ ! -d "orc-as/atomspace" ]; then
+            echo "Directory orc-as/atomspace is missing!"; exit 1;
+          fi
+          
       - name: Install dependencies
         run: |
           # Always rebuild and install cogutil to ensure consistency
