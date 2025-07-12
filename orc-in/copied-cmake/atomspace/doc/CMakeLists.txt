@@ -12,12 +12,14 @@ IF (DOXYGEN_FOUND)
 	CONFIGURE_FILE(
 		${PROJECT_SOURCE_DIR}/doc/Doxyfile
 		${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-	ADD_CUSTOM_TARGET (
-		doxygen
-		COMMAND ${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-		COMMENT "Generating documentation"
-	)
+	if(NOT TARGET doxygen)
+		ADD_CUSTOM_TARGET (
+			doxygen
+			COMMAND ${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+			COMMENT "Generating documentation"
+		)
+	endif()
     IF (STACK_FOUND)
         ADD_DEPENDENCIES(doxygen haskell-doc)
     ENDIF (STACK_FOUND)
