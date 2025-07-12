@@ -160,3 +160,6 @@ Makefile
 *.cmake
 !CMakeLists.txt
 !cmake/*.cmake
+
+# Cython generated files
+**/cython/**/*.cpp
