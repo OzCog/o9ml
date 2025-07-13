@@ -1,0 +1,19 @@
+{
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "log_level": "info"
+  },
+  "websocket": {
+    "host": "0.0.0.0",
+    "port": 8001
+  },
+  "unity": {
+    "enabled": true,
+    "port": 8002
+  },
+  "ros": {
+    "enabled": false,
+    "node_name": "opencog_cognitive_node"
+  }
+}
