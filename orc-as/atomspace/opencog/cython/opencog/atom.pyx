@@ -8,7 +8,7 @@ from cython.operator cimport dereference as deref
 from .atomspace cimport (
     cHandle, cAtom, cAtomSpace, cValuePtr, tv_ptr, Type, 
     PtrHolder, Value, TruthValue, back_inserter, 
-    AtomSpace_factory, createTruthValue, 
+    AtomSpace_factory,
     create_python_value_from_c_value,
     convert_handle_seq_to_python_list,
     convert_handle_set_to_python_list

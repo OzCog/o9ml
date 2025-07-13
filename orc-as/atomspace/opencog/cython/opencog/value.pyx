@@ -1,5 +1,6 @@
 from cpython.object cimport Py_EQ, Py_NE
 from cython.operator cimport dereference as deref
+from libcpp.memory cimport shared_ptr
 
 
 cdef class PtrHolder:
