@@ -171,7 +171,6 @@ cdef extern from "opencog/atoms/base/Handle.h" namespace "opencog":
     cdef cppclass cHandleSeq "opencog::HandleSeq"
 
 cdef class Atom(Value):
-    cdef cHandle* handle
     cdef object _atom_type
     cdef object _name
     cdef object _outgoing
@@ -228,6 +227,12 @@ cdef class AtomSpace(Value):
 
 cdef create_python_value_from_c_value(const cValuePtr& value)
 
+# Conversion functions 
+cdef convert_handle_seq_to_python_list(vector[cHandle] handles)
+cdef convert_handle_set_to_python_list(cpp_set[cHandle] handles)
+
+# Factory functions
+cdef TruthValue createTruthValue(strength_t strength, confidence_t confidence)
 
 # FloatValue
 cdef extern from "opencog/atoms/value/FloatValue.h" namespace "opencog":

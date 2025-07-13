@@ -1,9 +1,10 @@
 from libcpp cimport bool
 from libcpp.set cimport set as cpp_set
 from libcpp.vector cimport vector
+from libcpp.string cimport string
 from cython.operator cimport dereference as deref, preincrement as inc
 
-from atomspace cimport *
+from .atomspace cimport *
 
 
 # @todo use the guide here to separate out into a hierarchy
@@ -33,7 +34,7 @@ cdef vector[cHandle] atom_list_to_vector(list lst):
     cdef vector[cHandle] handle_vector
     for atom in lst:
         if isinstance(atom, Atom):
-            handle_vector.push_back(deref((<Atom>(atom)).handle))
+            handle_vector.push_back((<Atom>(atom)).get_c_handle())
         else:
             raise TypeError("outgoing set should contain atoms, got {0} instead".format(type(atom)))
     return handle_vector
@@ -149,7 +150,7 @@ cdef class AtomSpace(Value):
             assert isinstance(atom, Atom)
         except AssertionError:
             raise TypeError("Need Atom object")
-        if self.atomspace.is_valid_handle(deref((<Atom>atom).handle)):
+        if self.atomspace.is_valid_handle((<Atom>atom).get_c_handle()):
             return True
         return False
 
@@ -167,7 +168,7 @@ cdef class AtomSpace(Value):
         if self.atomspace == NULL:
             return None
         cdef bint recurse = recursive
-        return self.atomspace.extract_atom(deref(atom.handle),recurse)
+        return self.atomspace.extract_atom(atom.get_c_handle(),recurse)
 
     def clear(self):
         """ Remove all atoms from the AtomSpace """
@@ -180,7 +181,7 @@ cdef class AtomSpace(Value):
         """
         if self.atomspace == NULL:
             return None
-        self.atomspace.set_value(deref(atom.handle), deref(key.handle),
+        self.atomspace.set_value(atom.get_c_handle(), key.get_c_handle(),
                                  value.get_c_value_ptr())
 
     def set_truthvalue(self, Atom atom, TruthValue tv):
@@ -188,13 +189,13 @@ cdef class AtomSpace(Value):
         """
         if self.atomspace == NULL:
             return None
-        self.atomspace.set_truthvalue(deref(atom.handle), deref(tv._tvptr()))
+        self.atomspace.set_truthvalue(atom.get_c_handle(), deref(tv._tvptr()))
 
     # Methods to make the atomspace act more like a standard Python container
     def __contains__(self, atom):
         """ Custom checker to see if object is in AtomSpace """
         cdef cHandle result
-        result = self.atomspace.get_atom(deref((<Atom>(atom)).handle))
+        result = self.atomspace.get_atom((<Atom>(atom)).get_c_handle())
         return result != UNDEFINED
 
     # Maybe this should be called __repr__ ???

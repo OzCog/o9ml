@@ -2,6 +2,7 @@ from cpython cimport PyLong_FromLongLong
 from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 from libcpp.set cimport set as cpp_set
 from libcpp.vector cimport vector
+from libcpp.memory cimport shared_ptr
 from cython.operator cimport dereference as deref
 
 from .atomspace cimport (
@@ -17,17 +18,18 @@ from .atomspace cimport (
 cdef class Atom(Value):
 
     def __cinit__(self, PtrHolder ptr_holder, *args, **kwargs):
-        self.handle = <cHandle*>&((<PtrHolder>ptr_holder).shared_ptr)
+        # The handle will be managed through the inherited ptr_holder
         self._atom_type = None
         self._name = None
         self._outgoing = None
     
     @staticmethod
     cdef Atom createAtom(const cHandle& handle):
-        return Atom(PtrHolder.create(<shared_ptr[void]&>handle))
+        cdef PtrHolder ptr_holder = PtrHolder.create(<shared_ptr[void]&>handle)
+        return Atom(ptr_holder)
 
     cdef cHandle get_c_handle(Atom self):
-        """Return C++ shared_ptr from PtrHolder instance"""
+        """Return C++ cHandle from the inherited ptr_holder"""
         return <cHandle&>(self.ptr_holder.shared_ptr)
 
     @property
@@ -39,7 +41,7 @@ cdef class Atom(Value):
     def name(self):
         cdef cAtom* atom_ptr
         if self._name is None:
-            atom_ptr = self.handle.atom_ptr()
+            atom_ptr = self.get_c_handle().atom_ptr()
             if atom_ptr == NULL:   # avoid null-pointer deref
                 return None
             if atom_ptr.is_node():
@@ -50,7 +52,7 @@ cdef class Atom(Value):
 
     @property
     def tv(self):
-        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        cdef cAtom* atom_ptr = self.get_c_handle().atom_ptr()
         cdef tv_ptr tvp
         if atom_ptr == NULL:   # avoid null-pointer deref
             return None
@@ -65,7 +67,7 @@ cdef class Atom(Value):
             assert isinstance(truth_value, TruthValue)
         except AssertionError:
             raise TypeError("atom.tv property needs a TruthValue object")
-        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        cdef cAtom* atom_ptr = self.get_c_handle().atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
             return
         atom_ptr.setTruthValue(deref((<TruthValue>truth_value)._tvptr()))
@@ -76,12 +78,12 @@ cdef class Atom(Value):
     def set_value(self, key, value):
         if not isinstance(key, Atom):
             raise TypeError("key should be an instance of Atom, got {0} instead".format(type(key)))
-        self.get_c_handle().get().setValue(deref((<Atom>key).handle),
+        self.get_c_handle().get().setValue((<Atom>key).get_c_handle(),
                                 (<Value>value).get_c_value_ptr())
 
     def get_value(self, key):
         cdef cValuePtr value = self.get_c_handle().get().getValue(
-            deref((<Atom>key).handle))
+            (<Atom>key).get_c_handle())
         if value.get() == NULL:
             return None
         return create_python_value_from_c_value(value)
@@ -96,7 +98,7 @@ cdef class Atom(Value):
         return convert_handle_set_to_python_list(keys)
 
     def get_out(self):
-        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        cdef cAtom* atom_ptr = self.get_c_handle().atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
             return None
         cdef vector[cHandle] handle_vector = atom_ptr.getOutgoingSet()
@@ -105,7 +107,7 @@ cdef class Atom(Value):
     @property
     def out(self):
         if self._outgoing is None:
-            atom_ptr = self.handle.atom_ptr()
+            atom_ptr = self.get_c_handle().atom_ptr()
             if atom_ptr == NULL:   # avoid null-pointer deref
                 return None
             if atom_ptr.is_link():
@@ -121,7 +123,7 @@ cdef class Atom(Value):
     @property
     def incoming(self):
         cdef vector[cHandle] handle_vector
-        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        cdef cAtom* atom_ptr = self.get_c_handle().atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
             return None
         atom_ptr.getIncomingIter(back_inserter(handle_vector))
@@ -129,7 +131,7 @@ cdef class Atom(Value):
 
     def incoming_by_type(self, Type type):
         cdef vector[cHandle] handle_vector
-        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        cdef cAtom* atom_ptr = self.get_c_handle().atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
             return None
         atom_ptr.getIncomingSetByType(back_inserter(handle_vector), type)
