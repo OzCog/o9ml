@@ -1,0 +1,215 @@
+name: Build-Test-Package
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  opencog:
+    runs-on: ubuntu-latest
+    container:
+      image: opencog/opencog-deps
+      options: --user root
+      env:
+        CCACHE_DIR: /ws/ccache
+    services:
+      relex:
+        image: opencog/relex
+        options: --name relex
+        # Command equivalent to CircleCI: /bin/sh -c "./opencog-server.sh"
+    defaults:
+      run:
+        working-directory: /ws/opencog
+    steps:
+      # Equivalent to CircleCI: attach_workspace at /ws
+      - name: Attach workspace
+        run: mkdir -p /ws
+
+      # Equivalent to CircleCI: Start restoring ccache
+      - name: Start restoring ccache
+        run: date +%d-%m-%Y > /tmp/date
+
+      # Equivalent to CircleCI: restore_cache with ccache keys
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: /ws/ccache
+          key: ccache-${{ hashFiles('/tmp/date') }}
+          restore-keys: |
+            ccache-
+
+      # Equivalent to CircleCI: Install CogUtil step
+      - name: Install CogUtil
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/cogutil /ws/cogutil
+          mkdir -p /ws/cogutil/build
+          cd /ws/cogutil/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout AtomSpace step
+      - name: Checkout AtomSpace
+        run: git clone --depth 1 https://github.com/${{ github.repository_owner }}/atomspace /ws/atomspace
+
+      # Equivalent to CircleCI: Restore GHC Cache
+      - name: Restore GHC Cache
+        uses: actions/cache@v4
+        with:
+          path: /root/.stack
+          key: ghc-${{ hashFiles('/ws/atomspace/opencog/haskell/stack.yaml') }}-${{ runner.arch }}
+          restore-keys: |
+            ghc-
+
+      # Equivalent to CircleCI: Restore Haskell Deps Cache
+      - name: Restore Haskell Deps Cache
+        uses: actions/cache@v4
+        with:
+          path: /ws/atomspace/opencog/haskell/.stack-work
+          key: haskelldeps-${{ hashFiles('/ws/atomspace/opencog/haskell/stack.yaml') }}-${{ hashFiles('/ws/atomspace/opencog/haskell/opencog-atomspace.cabal') }}-${{ runner.arch }}
+          restore-keys: |
+            haskelldeps-
+
+      # Equivalent to CircleCI: Install AtomSpace step
+      - name: Install AtomSpace
+        run: |
+          mkdir -p /ws/atomspace/build
+          cd /ws/atomspace/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Save GHC Cache
+      - name: Save GHC Cache
+        uses: actions/cache@v4
+        with:
+          path: /root/.stack
+          key: ghc-${{ hashFiles('/ws/atomspace/opencog/haskell/stack.yaml') }}-${{ runner.arch }}
+
+      # Equivalent to CircleCI: Save Haskell Deps Cache
+      - name: Save Haskell Deps Cache
+        uses: actions/cache@v4
+        with:
+          path: /ws/atomspace/opencog/haskell/.stack-work
+          key: haskelldeps-${{ hashFiles('/ws/atomspace/opencog/haskell/stack.yaml') }}-${{ hashFiles('/ws/atomspace/opencog/haskell/opencog-atomspace.cabal') }}-${{ runner.arch }}
+
+      # Equivalent to CircleCI: Checkout Unify step
+      - name: Checkout Unify
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/unify /ws/unify
+          mkdir -p /ws/unify/build
+          cd /ws/unify/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout URE step
+      - name: Checkout URE
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/ure /ws/ure
+          mkdir -p /ws/ure/build
+          cd /ws/ure/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout CogServer step
+      - name: Checkout CogServer
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/cogserver /ws/cogserver
+          mkdir -p /ws/cogserver/build
+          cd /ws/cogserver/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout AttentionBank step
+      - name: Checkout AttentionBank
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/attention /ws/attention
+          mkdir -p /ws/attention/build
+          cd /ws/attention/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout SpaceTime step
+      - name: Checkout SpaceTime
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/spacetime /ws/spacetime
+          mkdir -p /ws/spacetime/build
+          cd /ws/spacetime/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout PLN step
+      - name: Checkout PLN
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/pln /ws/pln
+          mkdir -p /ws/pln/build
+          cd /ws/pln/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: Checkout LG-Atomese step
+      - name: Checkout LG-Atomese
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/lg-atomese /ws/lg-atomese
+          mkdir -p /ws/lg-atomese/build
+          cd /ws/lg-atomese/build && cmake .. && make -j2 && make -j2 install
+          ldconfig
+
+      # Equivalent to CircleCI: checkout step
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      # Equivalent to CircleCI: CMake Configure step
+      - name: CMake Configure
+        run: mkdir build && cd build && cmake ..
+
+      # Equivalent to CircleCI: Build step
+      - name: Build
+        run: cd build && make -j2
+
+      # Equivalent to CircleCI: Build tests step
+      - name: Build tests
+        run: cd build && make -j2 tests
+
+      # Equivalent to CircleCI: Run tests step
+      - name: Run tests
+        run: cd build && make check
+
+      # Equivalent to CircleCI: Print test log step (with when: always)
+      - name: Print test log
+        if: always()
+        run: cat build/tests/Testing/Temporary/LastTest.log
+
+      # Equivalent to CircleCI: Install OpenCog step
+      - name: Install OpenCog
+        run: cd build && make -j2 install && ldconfig
+
+      # Equivalent to CircleCI: persist_to_workspace with paths opencog and ccache
+      - name: Persist workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencog-workspace
+          path: |
+            /ws/opencog
+            /ws/ccache
+
+  # Equivalent to CircleCI: package job
+  package:
+    runs-on: ubuntu-latest
+    container:
+      image: opencog/opencog-deps
+      options: --user root
+    needs: opencog
+    # Equivalent to CircleCI: filters -> branches -> only: master
+    if: github.ref == 'refs/heads/master'
+    defaults:
+      run:
+        working-directory: /ws/opencog
+    steps:
+      # Equivalent to CircleCI: attach_workspace at /ws/
+      - name: Attach workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: opencog-workspace
+          path: /ws/
+
+      # Equivalent to CircleCI: Start storing ccache step
+      - name: Start storing ccache
+        run: date +%d-%m-%Y > /tmp/date
+
+      # Equivalent to CircleCI: save_cache with ccache key and path
+      - name: Save ccache
+        uses: actions/cache@v4
+        with:
+          path: /ws/ccache
+          key: ccache-${{ hashFiles('/tmp/date') }}
