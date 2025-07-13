@@ -163,3 +163,8 @@ Makefile
 
 # Cython generated files
 **/cython/**/*.cpp
+
+# GnuCash Cognitive Engine integration
+gnucashcog-v3/.git/
+gnucashcog-v3/build*/
+gnucashcog-v3/.vscode/

@@ -16,6 +16,19 @@ The OpenCog Central system consists of multiple integrated cognitive components:
 - **Sensory-Motor**: Link Grammar-based environment interaction
 - **Learning**: Structure discovery and pattern learning systems
 - **Agents**: Interactive cognitive agents with adaptive behavior
+- **Cognitive Accounting**: GnuCash cognitive engine for intelligent financial management
+
+## 💰 Cognitive Accounting Engine
+
+The integrated GnuCash Cognitive Engine (`gnucashcog-v3`) transforms traditional accounting into neural-symbolic cognitive systems:
+
+- **Neural-Symbolic Bookkeeping**: Converts double-entry accounting to cognitive tensor networks
+- **AtomSpace Financial Representation**: Chart of Accounts as hypergraph knowledge structures
+- **PLN Transaction Validation**: Probabilistic logic for intelligent ledger validation
+- **ECAN Attention Economics**: Dynamic resource allocation for financial processing
+- **Emergent Financial Intelligence**: Pattern discovery and predictive financial analysis
+
+For detailed information, see [GNUCASHCOG_INTEGRATION.md](GNUCASHCOG_INTEGRATION.md).
 
 ## 🧠 Cognitive Components
 

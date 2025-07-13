@@ -235,6 +235,12 @@ IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/robotics-embodied/CMakeLists.txt")
     ADD_SUBDIRECTORY(robotics-embodied)
 ENDIF()
 
+# GnuCash Cognitive Accounting Engine
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gnucashcog-v3/CMakeLists.txt")
+    MESSAGE(STATUS "Adding gnucashcog-v3 (cognitive accounting engine)")
+    ADD_SUBDIRECTORY(gnucashcog-v3)
+ENDIF()
+
 # ===================================================================
 # Show a summary of what was built
 
