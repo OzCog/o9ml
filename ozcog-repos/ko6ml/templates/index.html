@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>KoboldAI Client</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="stylesheet" href="static/jquery-ui.sortable.min.css">
+	<link rel="stylesheet" href="static/bootstrap.min.css">
+	<link rel="stylesheet" href="static/bootstrap-toggle.min.css">
+	<link rel="stylesheet" href="static/open-iconic-bootstrap.min.css">
+	<link href="static/open-iconic/css/open-iconic.css" rel="stylesheet">
+	<link rel="stylesheet" href="static/custom.css?ver=1.18.1c">
+
+	<script src="static/jquery-3.6.0.min.js"></script>
+	<script src="static/jquery-ui.sortable.min.js"></script>
+	<script src="static/socket.io.min.js"></script>
+	<script src="static/bootstrap.min.js"></script>
+	<script src="static/bootstrap-toggle.min.js"></script>
+	<script src="static/rangy-core.min.js"></script>
+	<script src="static/application.js?ver=1.18.1f"></script>
+	<script src="static/favicon.js"></script>
+</head>
+<body>
+	<input type="file" id="remote-save-select" accept="application/json" style="display:none">
+	<div class="container">
+		<div class="row" id="topmenu">
+			<div id="menuitems">
+				<div class="navcontainer">
+					<nav class="navbar" id="navbar">
+						<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown">
+							<span class="navbar-button-bar"></span>
+							<span class="navbar-button-bar"></span>
+							<span class="navbar-button-bar"></span>
+						</button>
+						<div class="collapse navbar-collapse" id="navbarNavDropdown">
+							<ul class="nav navbar-nav">
+								{% if not hide_ai_menu %}
+								<li class="nav-item">
+									<a class="nav-link" href="#" id="btn_loadmodel">AI</a>
+								</li>
+								{% endif %}
+								<li class="nav-item dropdown">
+									<a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">New Game</a>
+									<div class="dropdown-menu">
+										<a class="dropdown-item" href="#" id="btn_newgame">Blank Story</a>
+										<a class="dropdown-item" href="#" id="btn_rndgame">Random Story</a>
+									</div>
+								</li>
+								<li class="nav-item dropdown always-available">
+									<a class="nav-link dropdown-toggle always-available" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Save</a>
+									<div class="dropdown-menu">
+										<a class="dropdown-item" href="#" id="btn_save">Save</a>
+										<a class="dropdown-item" href="#" id="btn_saveas">Save As</a>
+										<a class="dropdown-item" href="#" id="btn_savetofile">Save To File...</a>
+										<a class="dropdown-item always-available" href="#" id="btn_download">Download Story as JSON</a>
+										<a class="dropdown-item" href="#" id="btn_downloadtxt">Download Story as Plaintext</a>
+									</div>
+								</li>
+								<li class="nav-item dropdown">
+									<a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Load</a>
+									<div class="dropdown-menu">
+										<a class="dropdown-item" href="#" id="btn_load">Load</a>
+										<a class="dropdown-item" href="#" id="btn_loadfromfile">Load From File...</a>
+									</div>
+								</li>
+								<li class="nav-item dropdown">
+									<a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Import</a>
+									<div class="dropdown-menu">
+										<a class="dropdown-item" href="#" id="btn_import">AI Dungeon Adventure</a>
+										<a class="dropdown-item" href="#" id="btn_importwi">AI Dungeon World Info</a>
+										<a class="dropdown-item" href="#" id="btn_impaidg">aetherroom.club Prompt</a>
+									</div>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" href="#" id="btn_settings">Settings</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" href="#" id="btn_format">Formatting</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" href="#" id="btn_samplers">Samplers</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" href="#" id="btn_userscripts">Userscripts</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link hidden" href="#" id="btn_softprompt">Soft Prompt</a>
+								</li>
+							</ul>
+						</div>
+					</nav>
+				</div>
+				<div id="connectstatusdiv" class="flex-row-container">
+					<span id="connectstatus" class="color_orange flex-row">Waiting for connection...</span>
+					<div class="layer-container status-container flex-push-left" style="color: #FFFFFF;" id="runtime"></div>
+					<div class="layer-container status-container flex-push-right">
+						<span class="oi oi-puzzle-piece statusicon layer-bottom" aria-hidden="true">
+							<div class="statustext statustext-wide">
+								<div id="stat-us" class="statusheader">No userscripts active</div>
+								<div id="stat-usactive"></div>
+							</div>
+						</span>
+						<div class="layer-top statusiconlabel" id="usiconlabel"></div>
+					</div>
+					<span class="oi oi-lightbulb statusicon" aria-hidden="true">
+						<div class="statustext">
+							<div id="stat-sp" class="statusheader">No soft prompt active</div>
+							<div id="stat-spactive"></div>
+						</div>
+					</span>
+				</div>
+			</div>
+		</div>
+		<div class="row" id="settingsmenu" style="display:none;">
+		</div>
+		<div class="row" id="formatmenu">
+		</div>
+
+		<div id="token_prob_menu" class="row hidden">
+			<div id="token_prob_container"></div>
+		</div>
+
+		<div class="layer-container">
+			<div class="layer-bottom row" id="gamescreen">
+				<span id="gametext" contenteditable="true"><p>...</p></span>
+				<div class="hidden" id="wimenu">
+				</div>
+			</div>
+			<div id="curtain" class="layer-top row hidden"></div>
+		</div>
+		<div class="row" id="seqselmenu">
+			<div class="seqselheader">Select sequence to keep:</div>
+			<div id="seqselcontents">
+			</div>
+		</div>
+		<div class="row flex" id="actionmenu">
+			<div id="actionmenuitems">
+				<button type="button" class="btn btn-primary" id="btn_actmem">Memory</button>
+				<button type="button" class="btn btn-primary" id="btn_actwi">W Info</button>
+				<button type="button" class="btn btn-primary" id="btn_actundo">Back</button>
+				<button type="button" class="btn btn-primary" id="btn_actredo">Redo</button>
+				<button type="button" class="btn btn-primary" id="btn_actretry">Retry</button>
+			</div>
+			<input type="text" id="chatname" class="form-control hidden" placeholder="Chat name">
+			<div id="messagefield"></div>
+			<div class="box flex-push-right">
+				<input type="checkbox" data-toggle="toggle" data-onstyle="success" id="allowediting" disabled>
+				<div class="box-label">Allow Editing</div>
+			</div>
+		</div>
+		<div class="row">
+			<div id="inputrow">
+				<div id="inputrowmode">
+					<button type="button" class="btn btn-secondary hidden" id="btnmode">Mode:<br/><b id="btnmode_label">Story</b></button>
+				</div>
+				<div id="inputrowleft" class="tokens-counted">
+					<textarea class="form-control" id="input_text" placeholder="Enter text here"></textarea>
+				</div>
+				<div id="inputrowright">
+					<button type="button" class="btn btn-secondary" id="btnsend">Wait</button>
+				</div>
+			</div>
+			<div id="anoterowcontainer">
+				<div id="anoterow">
+					<div id="anoterowleft">
+						<div class="anotelabel no-padding">
+							Author's Note
+						</div>
+						<div class="anotefield tokens-counted">
+							<textarea class="form-control" placeholder="Author's Note" id="anoteinput"></textarea>
+						</div>
+					</div>
+					<div id="anoterowright">
+						<div id="anoteslidelabel">
+							<div class="justifyleft">
+								Depth
+							</div>
+							<div class="justifyright" id="anotecur">
+								3
+							</div>
+						</div>
+						<div>
+							<input type="range" class="form-range airange" min="1" max="5" step="1" id="anotedepth">
+						</div>
+						<div class="settingminmax">
+							<div class="justifyleft">
+								1
+							</div>
+							<div class="justifyright">
+								5
+							</div>
+						</div>
+					</div>
+				</div>
+				<div>
+					<div class="anotelabel">
+						Author's Note Template (the "&lt;|&gt;" will be replaced with the Author's Note text)
+					</div>
+					<div class="anotefield">
+						<textarea class="form-control" placeholder="Author's Note Template" id="anotetemplate"></textarea>
+					</div>
+				</div>
+			</div>
+			<div  class="hidden" id="debugcontainer">
+				<textarea class="form-control" placeholder="Debug Info" id="debuginfo"></textarea>
+			</div>
+		</div>
+	</div>
+	<div class="hidden" id="popupcontainer">
+		<div id="popup_old">
+			<div id="popuptitlebar">
+				<div id="popuptitletext">Select an Adventure to Import</div>
+			</div>
+			<div id="popuplistheader">
+				<div>Title</div>
+				<div># Actions</div>
+				<div>Description</div>
+			</div>
+			<div id="popupcontent">
+			</div>
+			<div id="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_popupaccept">Accept</button>
+				<button type="button" class="btn btn-primary" id="btn_popupclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="aidgpopupcontainer">
+		<div id="aidgpopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Enter the Prompt Number</div>
+			</div>
+			<div class="aidgpopuplistheader">
+				(4-digit number at the end of aetherroom.club URL)
+			</div>
+			<div class="aidgpopupcontent">
+				<input class="form-control" type="text" placeholder="Prompt Number" id="aidgpromptnum">
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_aidgpopupaccept">Accept</button>
+				<button type="button" class="btn btn-primary" id="btn_aidgpopupclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="saveascontainer">
+		<div id="saveaspopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Enter Name For Save</div>
+			</div>
+			<div class="aidgpopupcontent">
+				<input class="form-control" type="text" placeholder="Save Name" id="savename"><br>
+				<input type="checkbox" data-toggle="toggle" data-onstyle="success" id="savepins" checked>
+				<div class="box-label">Save Pin Information</div>
+			</div>
+			<div class="popuperror hidden">
+				<span></span>
+			</div>
+			<div class="saveasoverwrite hidden">
+				<span>File already exists. Really overwrite?</span>
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_saveasaccept">Accept</button>
+				<button type="button" class="btn btn-primary" id="btn_saveasclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="loadcontainer">
+		<div class="loadpopup" id="loadpopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Select A Story To Load</div>
+			</div>
+			<div class="loadlistheader">
+				<div>Save Name</div>
+				<div class="flex-push-right"># Actions</div>
+			</div>
+			<div id="loadlistcontent">
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_loadaccept">Load</button>
+				<button type="button" class="btn btn-primary" id="btn_loadclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="loadmodelcontainer">
+		<div class="loadpopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Select A Model To Load</div>
+			</div>
+			<div id="loadmodellistbreadcrumbs">
+				
+			</div>
+			<div id="loadmodellistcontent" style="overflow: auto; height: 300px;">
+			</div>
+			<div class="popupfooter">
+				<input class="form-control hidden" type="text" placeholder="Enter the URL of the server (For example a trycloudflare link)" id="modelurl" onchange="check_enable_model_load()">
+				<input class="form-control hidden" type="text" placeholder="key" id="modelkey" onblur="socket.send({'cmd': 'OAI_Key_Update', 'key': $('#modelkey')[0].value});">
+				<input class="form-control hidden" type="text" placeholder="Model Path or Hugging Face Name" id="custommodelname" menu="" onblur="socket.send({'cmd': 'selectmodel', 'data': $(this).attr('menu'), 'path_modelname': $('#custommodelname')[0].value});">
+			</div>
+			<div class="popupfooter">
+				<select class="form-control hidden" id="oaimodel"><option value="">Select Model(s)</option></select>
+			</div>
+			<div class="popupfooter hidden" id=modellayers>
+				<div class='settingitem' style="width:100%">
+					<div class='settinglabel'>
+						<div class="justifyleft">
+							GPU/Disk Layers
+							<span class="helpicon">?
+								<span class="helptext">Number of layers to assign to GPUs and to disk cache. Remaining layers will be put into CPU RAM.</span>
+							</span>
+						</div>
+						<div class="justifyright" id="gpu_layers_current">0</div>
+					</div>
+					<div id=model_layer_bars style="color: white">
+						
+					</div>
+					<input type=hidden id='gpu_count' value=0/>
+					<div class="settingminmax">
+						<div class="justifyleft">
+							0
+						</div>
+						<div class="justifyright" id="gpu_layers_max">
+							24
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_loadmodelaccept">Load</button>
+				<button type="button" class="btn btn-primary" id="btn_loadmodelclose">Cancel</button>
+				<div class="box flex-push-right hidden" id=use_gpu_div>
+					<input type="checkbox" data-toggle="toggle" data-onstyle="success" id="use_gpu" checked>
+					<div class="box-label">Use GPU</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="spcontainer">
+		<div id="sppopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Select A Soft Prompt To Use</div>
+				<button class="btn btn-primary" onclick="socket.emit('show_folder_soft_prompt', {});"><span class="oi" style="color: white;" data-glyph="folder"></span></button>
+			</div>
+			<div id="splistcontent">
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_spaccept">Load</button>
+				<button type="button" class="btn btn-primary" id="btn_spclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="uscontainer">
+		<div id="uspopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Select userscripts to load; drag-and-drop to reorder</div>
+				<button class="btn btn-primary" onclick="socket.emit('show_folder_usersripts', {});"><span class="oi" style="color: white;" data-glyph="folder"></span></button>
+			</div>
+			<div class="usheadergrid">
+				<div>[AVAILABLE]</div>
+				<div>[ACTIVE]</div>
+			</div>
+			<div class="uslistgrid">
+				<div id="uslistunloaded">
+				</div>
+				<div id="uslistloaded">
+				</div>
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_usaccept">Load</button>
+				<button type="button" class="btn btn-primary" id="btn_usclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="samplerscontainer">
+		<div id="samplerspopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Drag-and-drop to change the order in which the samplers are applied</div>
+			</div>
+			<div id="samplerslist">
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_samplersaccept">Save</button>
+				<button type="button" class="btn btn-primary" id="btn_samplersclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="loadcontainerdelete">
+		<div id="loadpopupdelete">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Really Delete Story?</div>
+			</div>
+			<div class="dialogheader">
+				"<span id="loadcontainerdelete-storyname"></span>" will be PERMANENTLY deleted! You will not be able to recover this story later.
+			</div>
+			<div class="popuperror hidden">
+				<span></span>
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-danger" id="btn_dsaccept">Delete</button>
+				<button type="button" class="btn btn-primary" id="btn_dsclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="loadcontainerrename">
+		<div id="loadpopuprename">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Enter New Name For Story</div>
+			</div>
+			<div class="dialogheader">
+				What should the story "<span id="loadcontainerrename-storyname"></span>" be renamed to?
+				<input class="form-control" type="text" placeholder="New Save Name" id="newsavename">
+			</div>
+			<div class="popuperror hidden">
+				<span></span>
+			</div>
+			<div class="saveasoverwrite hidden">
+				<span>File already exists. Really overwrite?</span>
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_rensaccept">Accept</button>
+				<button type="button" class="btn btn-primary" id="btn_rensclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="newgamecontainer">
+		<div id="nspopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Really Start A New Story?</div>
+			</div>
+			<div class="aidgpopuplistheader">
+				Unsaved data will be lost.
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_nsaccept">Accept</button>
+				<button type="button" class="btn btn-primary" id="btn_nsclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden flex" id="showmodelnamecontainer" style="center;">
+		<div class="loadpopup">
+			<div class="popuptitlebar" style="width:50% center;">
+				<div class="popuptitletext">Model Info</div>
+			</div>
+			<div id=showmodelnamecontent style="width:50%;">
+				Model Info Missing
+			</div>
+			<div class="popupfooter" style="width:50% center;">
+				
+			</div>
+		</div>
+	</div>
+	<div class="popupcontainer hidden" id="rndgamecontainer">
+		<div id="rspopup">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Really Start A Random Story?</div>
+			</div>
+			<div class="aidgpopuplistheader">
+				<br>
+				Story quality and topic depends on the model and your settings/suggestion (Around 0.5 temp is recommended).<br>
+				This feature works best with heavily themed models like the Adventure model and can also be influenced with softprompts .<br>
+				If you get random spam then your model is not capable of using this feature and if you get unrelated stories it does not understand the topic.<br>
+				Generated results are unfiltered and can be offensive or unsuitable for children, the AI can make connections the model/softprompt creator did not intend.<br><br>
+				Unsaved data will be lost.<br><br>
+				Below you can input a genre suggestion for the AI to loosely base the story on (For example Horror or Cowboy).<br>
+			</div>
+			<div class="aidgpopupcontent">
+				<input class="form-control" type="text" placeholder="Story Genre Suggestion (Leave blank for fully random)" id="topic">
+			</div>
+			<div class="aidgpopupcontent">
+				<textarea class="form-control" placeholder="Memory" id="rngmemory"></textarea>
+			</div>
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" id="btn_rsaccept">Accept</button>
+				<button type="button" class="btn btn-primary" id="btn_rsclose">Cancel</button>
+			</div>
+		</div>
+	</div>
+	
+	<!------------- Pop-Up ------------------------------->
+	<div class="popupcontainer hidden" id="popup">
+		<div class="new_popup">
+			<div style="height:100%;">
+				<div class="title" id="popup_title">
+					Popup Title
+				</div>
+				<div id="popup_breadcrumbs"></div>
+				<div class="popup_list_area" id="popup_list"></div>
+				<div class="popup_load_cancel hidden" id="popup_upload">
+				<input type=file id="popup_upload_file">
+			</div>
+			<div style="background-color: black">Drag file(s) above or click here to Upload File<input id="popup_upload_input" type=file onchange="upload_file(this)"></div>
+			<div class="popup_load_cancel" id="popup_load_cancel">
+					<button class="btn btn-secondary popup_load_cancel_button" id="popup_accept">Load</button>
+					<button class="btn btn-primary popup_load_cancel_button" id="popup_cancel" onclick='document.getElementById("popup").classList.add("hidden");'>Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
