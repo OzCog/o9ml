@@ -168,3 +168,7 @@ Makefile
 gnucashcog-v3/.git/
 gnucashcog-v3/build*/
 gnucashcog-v3/.vscode/
+
+# OzCog repositories integrated into monorepo
+# These directories contain cloned repos with .git removed for integration
+# ozcog-repos/
